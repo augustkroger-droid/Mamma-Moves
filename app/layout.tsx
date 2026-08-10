@@ -1,4 +1,5 @@
 import type { Metadata, Viewport } from "next";
+import { NetworkStatus } from "@/components/pwa/network-status";
 import { PwaInstallPrompt } from "@/components/pwa/pwa-install-prompt";
 import { ServiceWorkerRegistration } from "@/components/pwa/service-worker-registration";
 import "./globals.css";
@@ -41,6 +42,7 @@ export default function RootLayout({
       <body>
         <ServiceWorkerRegistration />
         <PwaInstallPrompt />
+        <NetworkStatus />
         {children}
       </body>
     </html>

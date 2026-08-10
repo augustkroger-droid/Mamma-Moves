@@ -1205,6 +1205,39 @@ a {
   color: var(--color-primary);
 }
 
+.network-status {
+  position: fixed;
+  right: 14px;
+  bottom: calc(88px + env(safe-area-inset-bottom));
+  left: 14px;
+  z-index: 25;
+  display: flex;
+  width: min(calc(100% - 28px), 430px);
+  min-height: 48px;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  margin: 0 auto;
+  border: 1px solid var(--color-border);
+  border-radius: 999px;
+  padding: 10px 14px;
+  color: var(--color-text);
+  background: rgba(255, 255, 255, 0.96);
+  box-shadow: 0 16px 44px rgba(73, 38, 44, 0.14);
+  font-size: 0.9rem;
+  font-weight: 850;
+}
+
+.network-status.is-offline {
+  color: var(--color-primary-strong);
+  background: #fff7f5;
+}
+
+.network-status.is-online {
+  color: var(--color-good);
+  background: #f1faf5;
+}
+
 @media (min-width: 760px) {
   .app-shell {
     padding-top: 36px;

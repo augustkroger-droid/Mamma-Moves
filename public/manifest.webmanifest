@@ -1,11 +1,17 @@
 {
+  "id": "/",
   "name": "Mamma Moves",
   "short_name": "Mamma Moves",
   "description": "Din alldeles egna träningsapp.",
-  "start_url": "/intro",
+  "lang": "sv-SE",
+  "start_url": "/",
+  "scope": "/",
   "display": "standalone",
+  "display_override": ["standalone", "minimal-ui", "browser"],
+  "orientation": "portrait",
   "background_color": "#fffaf7",
   "theme_color": "#8f2634",
+  "categories": ["health", "fitness", "lifestyle"],
   "icons": [
     {
       "src": "/icons/icon-192.png",

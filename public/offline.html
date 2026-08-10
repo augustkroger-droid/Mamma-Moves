@@ -6,10 +6,14 @@
     <meta name="theme-color" content="#8f2634" />
     <title>Mamma Moves offline</title>
     <style>
+      * {
+        box-sizing: border-box;
+      }
+
       body {
+        display: grid;
         min-height: 100vh;
         margin: 0;
-        display: grid;
         place-items: center;
         padding: 24px;
         color: #24191b;
@@ -18,12 +22,20 @@
       }
 
       main {
-        max-width: 420px;
+        display: grid;
+        width: min(100%, 420px);
+        gap: 14px;
         border: 1px solid #eadcda;
         border-radius: 22px;
         padding: 22px;
         background: #fff;
         box-shadow: 0 16px 44px rgba(73, 38, 44, 0.08);
+      }
+
+      img {
+        width: 58px;
+        height: 58px;
+        border-radius: 18px;
       }
 
       h1 {
@@ -33,16 +45,31 @@
       }
 
       p {
-        margin: 12px 0 0;
+        margin: 0;
         color: #76676a;
         line-height: 1.55;
+      }
+
+      a {
+        display: inline-flex;
+        min-height: 48px;
+        align-items: center;
+        justify-content: center;
+        border-radius: 999px;
+        padding: 0 18px;
+        color: #fff;
+        background: #8f2634;
+        font-weight: 800;
+        text-decoration: none;
       }
     </style>
   </head>
   <body>
     <main>
+      <img src="/icons/icon-192.png" alt="" />
       <h1>Mamma Moves är offline.</h1>
-      <p>Du verkar sakna uppkoppling just nu. Öppna appen igen när nätet är tillbaka så fortsätter vi där vi var.</p>
+      <p>Du verkar sakna uppkoppling just nu. Sidor som redan sparats kan fortfarande öppnas, och appen fortsätter som vanligt när nätet är tillbaka.</p>
+      <a href="/">Försök igen</a>
     </main>
   </body>
 </html>
