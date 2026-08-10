@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { ArrowRight, Loader2, Plus } from "lucide-react";
+import { Archive, ArrowRight, Loader2, Plus } from "lucide-react";
 import { createBrowserSupabaseClient } from "@/lib/supabase/client";
 import { type WorkoutExercise } from "@/lib/workouts/active-workout";
 import type { Database } from "@/types/database";
@@ -24,10 +24,13 @@ export function WorkoutTemplateList() {
   const supabase = useMemo(() => createBrowserSupabaseClient(), []);
   const [templates, setTemplates] = useState<TemplateWithExercises[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [archivingIds, setArchivingIds] = useState<Set<string>>(new Set());
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   useEffect(() => {
     async function loadTemplates() {
+      const { data: userData } = await supabase.auth.getUser();
+      const userId = userData.user?.id ?? null;
       const { data: templateRows, error: templateError } = await supabase
         .from("workout_templates")
         .select("*")
@@ -40,7 +43,26 @@ export function WorkoutTemplateList() {
         return;
       }
 
-      const templateIds = (templateRows ?? []).map((template) => template.id);
+      let archivedTemplateIds = new Set<string>();
+
+      if (userId) {
+        const { data: archiveRows, error: archiveError } = await supabase
+          .from("workout_template_archives")
+          .select("workout_template_id")
+          .eq("user_id", userId);
+
+        if (archiveError) {
+          setErrorMessage(archiveError.message);
+          setIsLoading(false);
+          return;
+        }
+
+        archivedTemplateIds = new Set((archiveRows ?? []).map((row) => row.workout_template_id));
+      }
+
+      const visibleTemplates = ((templateRows ?? []) as WorkoutTemplate[])
+        .filter((template) => !archivedTemplateIds.has(template.id));
+      const templateIds = visibleTemplates.map((template) => template.id);
 
       if (templateIds.length === 0) {
         setTemplates([]);
@@ -61,18 +83,20 @@ export function WorkoutTemplateList() {
       }
 
       const exerciseIds = [...new Set((linkRows ?? []).map((link) => link.exercise_id))];
-      const { data: exerciseRows, error: exerciseError } = await supabase
-        .from("exercises")
-        .select("id, name, description, youtube_video_id, thumbnail_url, category, active, created_by, created_at, updated_at")
-        .in("id", exerciseIds);
+      const exerciseResult = exerciseIds.length > 0
+        ? await supabase
+            .from("exercises")
+            .select("id, name, description, youtube_video_id, thumbnail_url, category, active, created_by, created_at, updated_at")
+            .in("id", exerciseIds)
+        : { data: [], error: null };
 
-      if (exerciseError) {
-        setErrorMessage(exerciseError.message);
+      if (exerciseResult.error) {
+        setErrorMessage(exerciseResult.error.message);
         setIsLoading(false);
         return;
       }
 
-      const exercisesById = new Map((exerciseRows ?? []).map((exercise) => [exercise.id, exercise]));
+      const exercisesById = new Map((exerciseResult.data ?? []).map((exercise) => [exercise.id, exercise]));
       const linksByTemplate = new Map<string, TemplateExercise[]>();
 
       for (const link of (linkRows ?? []) as TemplateExercise[]) {
@@ -83,7 +107,7 @@ export function WorkoutTemplateList() {
       }
 
       setTemplates(
-        ((templateRows ?? []) as WorkoutTemplate[]).map((template) => ({
+        visibleTemplates.map((template) => ({
           ...template,
           exercises: (linksByTemplate.get(template.id) ?? [])
             .sort((first, second) => first.position - second.position)
@@ -97,6 +121,55 @@ export function WorkoutTemplateList() {
     void loadTemplates();
   }, [supabase]);
 
+  async function archiveTemplate(templateId: string) {
+    setErrorMessage(null);
+    setArchivingIds((current) => new Set(current).add(templateId));
+
+    const { data: userData, error: userError } = await supabase.auth.getUser();
+
+    if (userError || !userData.user) {
+      setErrorMessage("Kunde inte hitta inloggad användare.");
+      setArchivingIds((current) => {
+        const next = new Set(current);
+        next.delete(templateId);
+        return next;
+      });
+      return;
+    }
+
+    const { error } = await supabase
+      .from("workout_template_archives")
+      .upsert({
+        user_id: userData.user.id,
+        workout_template_id: templateId
+      });
+
+    if (error) {
+      setErrorMessage(error.message);
+    } else {
+      setTemplates((current) => current.filter((template) => template.id !== templateId));
+    }
+
+    setArchivingIds((current) => {
+      const next = new Set(current);
+      next.delete(templateId);
+      return next;
+    });
+  }
+
+  const pageActions = (
+    <div className="workout-page-actions">
+      <Link className="button" href="/workouts/new">
+        <Plus aria-hidden="true" size={20} />
+        Skapa nytt pass
+      </Link>
+      <Link className="button secondary" href="/workouts/archive" title="Visa arkiverade pass">
+        <Archive aria-hidden="true" size={20} />
+        Arkiv
+      </Link>
+    </div>
+  );
+
   if (isLoading) {
     return (
       <section className="empty-state card" aria-live="polite">
@@ -106,7 +179,7 @@ export function WorkoutTemplateList() {
     );
   }
 
-  if (errorMessage) {
+  if (errorMessage && templates.length === 0) {
     return (
       <section className="empty-state card" role="alert">
         <h2 className="section-title">Kunde inte hämta pass</h2>
@@ -118,13 +191,10 @@ export function WorkoutTemplateList() {
   if (templates.length === 0) {
     return (
       <>
-        <Link className="button full" href="/workouts/new">
-          <Plus aria-hidden="true" size={20} />
-          Skapa nytt pass
-        </Link>
+        {pageActions}
         <section className="empty-state card">
           <h2 className="section-title">Inga färdiga pass än</h2>
-          <p className="muted">Lägg in pass i Supabase så visas de här.</p>
+          <p className="muted">Skapa ett eget pass eller hämta tillbaka ett arkiverat pass.</p>
         </section>
       </>
     );
@@ -132,10 +202,8 @@ export function WorkoutTemplateList() {
 
   return (
     <>
-      <Link className="button full" href="/workouts/new">
-        <Plus aria-hidden="true" size={20} />
-        Skapa nytt pass
-      </Link>
+      {pageActions}
+      {errorMessage ? <p className="form-message" role="alert">{errorMessage}</p> : null}
       <section className="screen-stack" aria-label="Färdiga pass">
         {templates.map((template) => {
           const firstExercise = template.exercises[0];
@@ -163,6 +231,21 @@ export function WorkoutTemplateList() {
                   <ArrowRight size={20} />
                 </span>
               </Link>
+              <div className="template-card__footer">
+                <button
+                  className="template-card__archive"
+                  type="button"
+                  onClick={() => archiveTemplate(template.id)}
+                  disabled={archivingIds.has(template.id)}
+                >
+                  {archivingIds.has(template.id) ? (
+                    <Loader2 className="spin" aria-hidden="true" size={18} />
+                  ) : (
+                    <Archive aria-hidden="true" size={18} />
+                  )}
+                  Arkivera
+                </button>
+              </div>
             </article>
           );
         })}

@@ -344,6 +344,10 @@ a {
   background: var(--color-primary-soft);
 }
 
+.button.danger {
+  background: var(--color-primary-strong);
+}
+
 .button.full {
   width: 100%;
 }
@@ -438,7 +442,6 @@ a {
 }
 
 .exercise-card button,
-.template-card button,
 .template-card__link {
   display: grid;
   width: 100%;
@@ -494,6 +497,45 @@ a {
 
 .template-card {
   overflow: hidden;
+}
+
+.workout-page-actions {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 10px;
+}
+
+.template-card__footer {
+  display: flex;
+  justify-content: flex-end;
+  border-top: 1px solid var(--color-border);
+  padding: 0 12px 12px;
+}
+
+.template-card__archive {
+  display: inline-flex;
+  min-height: 38px;
+  align-items: center;
+  gap: 8px;
+  border: 0;
+  border-radius: 999px;
+  padding: 0 12px;
+  color: var(--color-primary);
+  background: var(--color-primary-soft);
+  font-size: 0.88rem;
+  font-weight: 850;
+  cursor: pointer;
+}
+
+.archive-template-summary {
+  cursor: default;
+}
+
+.archive-actions {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 10px;
+  padding: 0 12px 12px;
 }
 
 .template-card em {

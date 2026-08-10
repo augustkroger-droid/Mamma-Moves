@@ -115,6 +115,22 @@ export type Database = {
         };
         Relationships: [];
       };
+      workout_template_archives: {
+        Row: {
+          user_id: string;
+          workout_template_id: string;
+          archived_at: string;
+        };
+        Insert: {
+          user_id: string;
+          workout_template_id: string;
+          archived_at?: string;
+        };
+        Update: {
+          archived_at?: string;
+        };
+        Relationships: [];
+      };
       workout_sessions: {
         Row: {
           id: string;
