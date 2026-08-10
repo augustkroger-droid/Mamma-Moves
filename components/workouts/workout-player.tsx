@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
-import { ArrowLeft, ArrowRight, CheckCircle2, Loader2, Pause, Play } from "lucide-react";
+import { ArrowLeft, ArrowRight, CheckCircle2, Loader2, Pause, Play, Square } from "lucide-react";
 import { createBrowserSupabaseClient } from "@/lib/supabase/client";
 import { localDateKey } from "@/lib/dates/local-date";
 import { summarizeStreak, type StreakPauseRange } from "@/lib/streak/streak";
@@ -388,7 +388,11 @@ export function WorkoutPlayer() {
     );
   }
 
-  async function finishWorkout(status: "paused" | "completed", completedCount: number) {
+  async function finishWorkout(
+    status: "paused" | "completed",
+    completedCount: number,
+    shouldCompleteCurrentExercise = status === "completed"
+  ) {
     const sessionId = sessionIdRef.current;
 
     if (!workout || !sessionId || isSaving) {
@@ -399,7 +403,7 @@ export function WorkoutPlayer() {
     setSaveError(null);
 
     try {
-      if (status === "completed") {
+      if (status === "completed" && shouldCompleteCurrentExercise) {
         await markExerciseCompleted(currentIndex);
       }
 
@@ -558,6 +562,15 @@ export function WorkoutPlayer() {
           {isSaving ? <Loader2 className="spin" aria-hidden="true" size={18} /> : null}
           {isLastExercise ? "Slutför" : "Nästa"}
           {!isLastExercise ? <ArrowRight aria-hidden="true" size={18} /> : <Play aria-hidden="true" size={18} />}
+        </button>
+        <button
+          className="button secondary workout-end-button"
+          type="button"
+          onClick={() => finishWorkout("completed", completedCount, false)}
+          disabled={isSaving}
+        >
+          <Square aria-hidden="true" size={18} />
+          Avsluta
         </button>
       </footer>
     </main>

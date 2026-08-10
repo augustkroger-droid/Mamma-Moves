@@ -2,10 +2,10 @@
 
 import { useEffect, useMemo, useState } from "react";
 import Image from "next/image";
-import { useRouter } from "next/navigation";
-import { ArrowRight, Loader2 } from "lucide-react";
+import Link from "next/link";
+import { ArrowRight, Loader2, Plus } from "lucide-react";
 import { createBrowserSupabaseClient } from "@/lib/supabase/client";
-import { saveActiveWorkout, type WorkoutExercise } from "@/lib/workouts/active-workout";
+import { type WorkoutExercise } from "@/lib/workouts/active-workout";
 import type { Database } from "@/types/database";
 
 type WorkoutTemplate = Database["public"]["Tables"]["workout_templates"]["Row"];
@@ -21,7 +21,6 @@ function youtubeThumbnail(videoId: string) {
 }
 
 export function WorkoutTemplateList() {
-  const router = useRouter();
   const supabase = useMemo(() => createBrowserSupabaseClient(), []);
   const [templates, setTemplates] = useState<TemplateWithExercises[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -64,7 +63,7 @@ export function WorkoutTemplateList() {
       const exerciseIds = [...new Set((linkRows ?? []).map((link) => link.exercise_id))];
       const { data: exerciseRows, error: exerciseError } = await supabase
         .from("exercises")
-        .select("id, name, description, youtube_video_id, thumbnail_url, category, active, created_at, updated_at")
+        .select("id, name, description, youtube_video_id, thumbnail_url, category, active, created_by, created_at, updated_at")
         .in("id", exerciseIds);
 
       if (exerciseError) {
@@ -98,16 +97,6 @@ export function WorkoutTemplateList() {
     void loadTemplates();
   }, [supabase]);
 
-  function startTemplate(template: TemplateWithExercises) {
-    saveActiveWorkout({
-      title: template.name,
-      workoutTemplateId: template.id,
-      returnHref: "/workouts",
-      exercises: template.exercises
-    });
-    router.push("/workout");
-  }
-
   if (isLoading) {
     return (
       <section className="empty-state card" aria-live="polite">
@@ -128,48 +117,56 @@ export function WorkoutTemplateList() {
 
   if (templates.length === 0) {
     return (
-      <section className="empty-state card">
-        <h2 className="section-title">Inga färdiga pass än</h2>
-        <p className="muted">Lägg in pass i Supabase så visas de här.</p>
-      </section>
+      <>
+        <Link className="button full" href="/workouts/new">
+          <Plus aria-hidden="true" size={20} />
+          Skapa nytt pass
+        </Link>
+        <section className="empty-state card">
+          <h2 className="section-title">Inga färdiga pass än</h2>
+          <p className="muted">Lägg in pass i Supabase så visas de här.</p>
+        </section>
+      </>
     );
   }
 
   return (
-    <section className="screen-stack" aria-label="Färdiga pass">
-      {templates.map((template) => {
-        const firstExercise = template.exercises[0];
-        const thumbnailUrl = template.thumbnail_url || (
-          firstExercise ? youtubeThumbnail(firstExercise.youtube_video_id) : null
-        );
+    <>
+      <Link className="button full" href="/workouts/new">
+        <Plus aria-hidden="true" size={20} />
+        Skapa nytt pass
+      </Link>
+      <section className="screen-stack" aria-label="Färdiga pass">
+        {templates.map((template) => {
+          const firstExercise = template.exercises[0];
+          const thumbnailUrl = template.thumbnail_url || (
+            firstExercise ? youtubeThumbnail(firstExercise.youtube_video_id) : null
+          );
 
-        return (
-          <article key={template.id} className="template-card card">
-            <button
-              type="button"
-              onClick={() => startTemplate(template)}
-              disabled={template.exercises.length === 0}
-            >
-              {thumbnailUrl ? (
-                <Image src={thumbnailUrl} alt="" width={192} height={120} unoptimized />
-              ) : (
-                <span className="template-fallback" aria-hidden="true" />
-              )}
-              <span>
-                <strong>{template.name}</strong>
-                <small>
-                  {template.exercises.length} övningar
-                  {template.category ? ` · ${template.category}` : ""}
-                </small>
-                {template.description ? <em>{template.description}</em> : null}
-              </span>
-              <span className="select-indicator" aria-hidden="true">
-                <ArrowRight size={20} />
-              </span>
-            </button>
-          </article>
-        );
-      })}
-    </section>
+          return (
+            <article key={template.id} className="template-card card">
+              <Link href={`/workouts/${template.id}`} className="template-card__link">
+                {thumbnailUrl ? (
+                  <Image src={thumbnailUrl} alt="" width={192} height={120} unoptimized />
+                ) : (
+                  <span className="template-fallback" aria-hidden="true" />
+                )}
+                <span>
+                  <strong>{template.name}</strong>
+                  <small>
+                    {template.exercises.length} övningar
+                    {template.category ? ` · ${template.category}` : ""}
+                  </small>
+                  {template.description ? <em>{template.description}</em> : null}
+                </span>
+                <span className="select-indicator" aria-hidden="true">
+                  <ArrowRight size={20} />
+                </span>
+              </Link>
+            </article>
+          );
+        })}
+      </section>
+    </>
   );
 }
