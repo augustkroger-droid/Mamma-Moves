@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { useParams, useRouter } from "next/navigation";
-import { ArrowLeft, ArrowDown, ArrowUp, Loader2, Plus, Play, X } from "lucide-react";
+import { Archive, ArrowLeft, ArrowDown, ArrowUp, Loader2, Plus, Play, X } from "lucide-react";
 import { createBrowserSupabaseClient } from "@/lib/supabase/client";
 import { saveActiveWorkout, type WorkoutExercise } from "@/lib/workouts/active-workout";
 import type { Database } from "@/types/database";
@@ -32,6 +32,7 @@ export function WorkoutTemplateDetail() {
   const [allExercises, setAllExercises] = useState<Exercise[]>([]);
   const [selectedExercises, setSelectedExercises] = useState<WorkoutExercise[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [isArchiving, setIsArchiving] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   useEffect(() => {
@@ -107,6 +108,38 @@ export function WorkoutTemplateDetail() {
     router.push("/workout");
   }
 
+  async function archiveTemplate() {
+    if (!template || isArchiving) {
+      return;
+    }
+
+    setIsArchiving(true);
+    setErrorMessage(null);
+
+    const { data: userData, error: userError } = await supabase.auth.getUser();
+
+    if (userError || !userData.user) {
+      setErrorMessage("Kunde inte hitta inloggad användare.");
+      setIsArchiving(false);
+      return;
+    }
+
+    const { error } = await supabase
+      .from("workout_template_archives")
+      .upsert({
+        user_id: userData.user.id,
+        workout_template_id: template.id
+      });
+
+    if (error) {
+      setErrorMessage(error.message);
+      setIsArchiving(false);
+      return;
+    }
+
+    router.push("/workouts");
+  }
+
   if (isLoading) {
     return (
       <section className="empty-state card" aria-live="polite">
@@ -136,10 +169,22 @@ export function WorkoutTemplateDetail() {
         Pass
       </Link>
 
-      <header>
-        <p className="eyebrow">{template.category || "Pass"}</p>
-        <h1 className="page-title">{template.name}</h1>
-        {template.description ? <p className="page-lead">{template.description}</p> : null}
+      <header className="template-detail-header">
+        <div>
+          <p className="eyebrow">{template.category || "Pass"}</p>
+          <h1 className="page-title">{template.name}</h1>
+          {template.description ? <p className="page-lead">{template.description}</p> : null}
+        </div>
+        <button
+          className="icon-button"
+          type="button"
+          title="Arkivera pass"
+          aria-label="Arkivera pass"
+          onClick={archiveTemplate}
+          disabled={isArchiving}
+        >
+          {isArchiving ? <Loader2 className="spin" aria-hidden="true" size={20} /> : <Archive aria-hidden="true" size={20} />}
+        </button>
       </header>
 
       <section className="card workout-editor-panel">

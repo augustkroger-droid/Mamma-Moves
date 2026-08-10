@@ -212,7 +212,7 @@ export function WorkoutTemplateList() {
           );
 
           return (
-            <article key={template.id} className="template-card card">
+            <article key={template.id} className="template-card template-card--compact card">
               <Link href={`/workouts/${template.id}`} className="template-card__link">
                 {thumbnailUrl ? (
                   <Image src={thumbnailUrl} alt="" width={192} height={120} unoptimized />
@@ -227,14 +227,16 @@ export function WorkoutTemplateList() {
                   </small>
                   {template.description ? <em>{template.description}</em> : null}
                 </span>
-                <span className="select-indicator" aria-hidden="true">
-                  <ArrowRight size={20} />
-                </span>
               </Link>
-              <div className="template-card__footer">
+              <div className="template-card__actions">
+                <Link className="icon-button" href={`/workouts/${template.id}`} title="Öppna pass">
+                  <ArrowRight aria-hidden="true" size={20} />
+                </Link>
                 <button
-                  className="template-card__archive"
+                  className="icon-button"
                   type="button"
+                  title="Arkivera pass"
+                  aria-label={`Arkivera ${template.name}`}
                   onClick={() => archiveTemplate(template.id)}
                   disabled={archivingIds.has(template.id)}
                 >
@@ -243,7 +245,6 @@ export function WorkoutTemplateList() {
                   ) : (
                     <Archive aria-hidden="true" size={18} />
                   )}
-                  Arkivera
                 </button>
               </div>
             </article>
