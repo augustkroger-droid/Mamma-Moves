@@ -115,7 +115,8 @@ a {
   cursor: pointer;
 }
 
-.segmented-control button[aria-selected="true"] {
+.segmented-control button[aria-selected="true"],
+.segmented-control button[aria-pressed="true"] {
   color: #fff;
   background: var(--color-primary);
 }
@@ -320,6 +321,11 @@ a {
   cursor: pointer;
 }
 
+.icon-button.danger {
+  color: #fff;
+  background: var(--color-primary-strong);
+}
+
 .text-button {
   min-height: 42px;
   border: 0;
@@ -518,6 +524,10 @@ a {
   border-radius: 12px;
 }
 
+.template-card--archive {
+  align-items: center;
+}
+
 .template-card__actions {
   display: grid;
   grid-template-columns: repeat(2, 42px);
@@ -539,6 +549,63 @@ a {
   grid-template-columns: 1fr;
   gap: 10px;
   padding: 0 12px 12px;
+}
+
+.admin-tabs {
+  margin: 0;
+}
+
+.admin-inline-actions {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 10px;
+}
+
+.check-row {
+  display: flex;
+  min-height: 42px;
+  align-items: center;
+  gap: 10px;
+  color: var(--color-text);
+  font-weight: 800;
+}
+
+.check-row input {
+  width: 20px;
+  height: 20px;
+  accent-color: var(--color-primary);
+}
+
+.admin-check-list {
+  display: grid;
+  max-height: 230px;
+  gap: 6px;
+  overflow: auto;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  padding: 10px;
+  background: var(--color-surface-soft);
+}
+
+.admin-list {
+  display: grid;
+  gap: 8px;
+}
+
+.admin-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  border-radius: var(--radius-sm);
+  padding: 12px;
+  background: var(--color-surface-soft);
+}
+
+.admin-row span {
+  color: var(--color-primary);
+  font-size: 0.84rem;
+  font-weight: 900;
 }
 
 .template-detail-header {

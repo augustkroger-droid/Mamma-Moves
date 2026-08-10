@@ -221,7 +221,7 @@ export function WorkoutTemplateArchive() {
             );
 
             return (
-              <article key={template.id} className="template-card card">
+              <article key={template.id} className="template-card template-card--compact template-card--archive card">
                 <div className="template-card__link archive-template-summary">
                   {thumbnailUrl ? (
                     <Image src={thumbnailUrl} alt="" width={192} height={120} unoptimized />
@@ -237,10 +237,12 @@ export function WorkoutTemplateArchive() {
                     {template.description ? <em>{template.description}</em> : null}
                   </span>
                 </div>
-                <div className="archive-actions">
+                <div className="template-card__actions">
                   <button
-                    className="button secondary"
+                    className="icon-button"
                     type="button"
+                    title="Hämta tillbaka"
+                    aria-label={`Hämta tillbaka ${template.name}`}
                     onClick={() => restoreTemplate(template.id)}
                     disabled={busyIds.has(template.id)}
                   >
@@ -249,16 +251,16 @@ export function WorkoutTemplateArchive() {
                     ) : (
                       <ArchiveRestore aria-hidden="true" size={18} />
                     )}
-                    Hämta tillbaka
                   </button>
                   <button
-                    className="button danger"
+                    className="icon-button danger"
                     type="button"
+                    title="Radera permanent"
+                    aria-label={`Radera ${template.name} permanent från ditt konto`}
                     onClick={() => deleteTemplate(template.id)}
                     disabled={busyIds.has(template.id)}
                   >
                     <Trash2 aria-hidden="true" size={18} />
-                    Radera permanent
                   </button>
                 </div>
               </article>

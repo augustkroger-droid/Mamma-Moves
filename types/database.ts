@@ -7,6 +7,7 @@ export type Database = {
         Row: {
           id: string;
           username: string;
+          email: string | null;
           has_seen_intro: boolean;
           intro_seen_at: string | null;
           created_at: string;
@@ -15,6 +16,7 @@ export type Database = {
         Insert: {
           id: string;
           username: string;
+          email?: string | null;
           has_seen_intro?: boolean;
           intro_seen_at?: string | null;
           created_at?: string;
@@ -22,6 +24,7 @@ export type Database = {
         };
         Update: {
           username?: string;
+          email?: string | null;
           has_seen_intro?: boolean;
           intro_seen_at?: string | null;
           updated_at?: string;
@@ -74,6 +77,7 @@ export type Database = {
           category: string | null;
           active: boolean;
           created_by: string | null;
+          visibility: "all" | "selected" | "private";
           created_at: string;
           updated_at: string;
         };
@@ -85,6 +89,7 @@ export type Database = {
           category?: string | null;
           active?: boolean;
           created_by?: string | null;
+          visibility?: "all" | "selected" | "private";
           created_at?: string;
           updated_at?: string;
         };
@@ -95,6 +100,7 @@ export type Database = {
           category?: string | null;
           active?: boolean;
           created_by?: string | null;
+          visibility?: "all" | "selected" | "private";
           updated_at?: string;
         };
         Relationships: [];
@@ -131,6 +137,23 @@ export type Database = {
         Update: {
           archived_at?: string;
           deleted_at?: string | null;
+        };
+        Relationships: [];
+      };
+      workout_template_access: {
+        Row: {
+          workout_template_id: string;
+          user_id: string;
+          created_at: string;
+        };
+        Insert: {
+          workout_template_id: string;
+          user_id: string;
+          created_at?: string;
+        };
+        Update: {
+          workout_template_id?: string;
+          user_id?: string;
         };
         Relationships: [];
       };

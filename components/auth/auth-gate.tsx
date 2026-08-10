@@ -60,6 +60,7 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
       await supabase.from("profiles").upsert({
         id: user.id,
         username,
+        email: user.email ?? null,
         updated_at: new Date().toISOString()
       });
     }
