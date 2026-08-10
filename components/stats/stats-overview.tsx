@@ -5,9 +5,8 @@ import { Loader2, PauseCircle } from "lucide-react";
 import { createBrowserSupabaseClient } from "@/lib/supabase/client";
 import { localDateKey } from "@/lib/dates/local-date";
 import {
-  calculateCurrentStreak,
-  calculateLongestStreak,
   pauseDaysFromRanges,
+  summarizeStreak,
   type StreakPauseRange
 } from "@/lib/streak/streak";
 
@@ -17,11 +16,15 @@ type TrainingSession = {
   duration_seconds: number;
 };
 
+type CompletedExercise = {
+  workout_session_id: string;
+};
+
 export function StatsOverview() {
   const supabase = useMemo(() => createBrowserSupabaseClient(), []);
   const [sessions, setSessions] = useState<TrainingSession[]>([]);
   const [pauses, setPauses] = useState<StreakPauseRange[]>([]);
-  const [completedExercises, setCompletedExercises] = useState(0);
+  const [completedExercises, setCompletedExercises] = useState<CompletedExercise[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isPausing, setIsPausing] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -35,7 +38,7 @@ export function StatsOverview() {
         .neq("status", "started"),
       supabase
         .from("workout_session_exercises")
-        .select("id", { count: "exact", head: true })
+        .select("workout_session_id")
         .eq("completed", true),
       supabase
         .from("streak_pauses")
@@ -50,7 +53,7 @@ export function StatsOverview() {
       setErrorMessage(pausesResult.error.message);
     } else {
       setSessions((sessionsResult.data ?? []) as TrainingSession[]);
-      setCompletedExercises(exercisesResult.count ?? 0);
+      setCompletedExercises((exercisesResult.data ?? []) as CompletedExercise[]);
       setPauses((pausesResult.data ?? []) as StreakPauseRange[]);
     }
 
@@ -115,19 +118,22 @@ export function StatsOverview() {
     );
   }
 
-  const trainedDays = new Set(sessions.map((session) => localDateKey(new Date(session.started_at))));
-  const pausedDays = pauseDaysFromRanges(pauses);
+  const trainedSessionIds = new Set(completedExercises.map((exercise) => exercise.workout_session_id));
+  const trainedDays = new Set(
+    sessions
+      .filter((session) => trainedSessionIds.has(session.id))
+      .map((session) => localDateKey(new Date(session.started_at)))
+  );
+  const streakSummary = summarizeStreak(trainedDays, pauses);
   const totalSeconds = sessions.reduce((sum, session) => sum + session.duration_seconds, 0);
   const totalMinutes = Math.round(totalSeconds / 60);
-  const currentStreak = calculateCurrentStreak(trainedDays, pausedDays);
-  const longestStreak = calculateLongestStreak(trainedDays, pausedDays);
   const stats = [
     { label: "Pass", value: sessions.length.toString() },
     { label: "Minuter", value: totalMinutes.toString() },
     { label: "Tränade dagar", value: trainedDays.size.toString() },
-    { label: "Övningar", value: completedExercises.toString() },
-    { label: "Streak", value: currentStreak.toString() },
-    { label: "Längsta", value: longestStreak.toString() }
+    { label: "Övningar", value: completedExercises.length.toString() },
+    { label: "Streak", value: streakSummary.currentStreak.toString() },
+    { label: "Längsta", value: streakSummary.longestStreak.toString() }
   ];
 
   return (

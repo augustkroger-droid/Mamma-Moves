@@ -110,6 +110,11 @@ export function TrainingCalendar() {
   const firstWeekday = (new Date(year, month, 1).getDay() + 6) % 7;
   const monthDays = Array.from({ length: daysInMonth }, (_, index) => new Date(year, month, index + 1));
   const sessionsByDay = new Map<string, TrainingSession[]>();
+  const completedSessionIds = new Set(
+    sessionExercises
+      .filter((exercise) => exercise.completed)
+      .map((exercise) => exercise.workout_session_id)
+  );
   const pausedDays = new Set(pauses.flatMap((pause) => eachDateInRange(pause.start_date, pause.end_date)));
 
   for (const session of sessions) {
@@ -152,7 +157,9 @@ export function TrainingCalendar() {
           ))}
           {monthDays.map((day) => {
             const key = localDateKey(day);
-            const hasTraining = sessionsByDay.has(key);
+            const hasTraining = (sessionsByDay.get(key) ?? []).some((session) =>
+              completedSessionIds.has(session.id)
+            );
             const hasPause = pausedDays.has(key);
             const isSelected = selectedDay === key;
 

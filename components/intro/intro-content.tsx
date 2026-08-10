@@ -1,15 +1,84 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { ArrowRight, Loader2, Play } from "lucide-react";
+import { ArrowRight, CalendarCheck2, Dumbbell, Flame, Loader2, Play } from "lucide-react";
 import { createBrowserSupabaseClient } from "@/lib/supabase/client";
+import { localDateKey } from "@/lib/dates/local-date";
+import { summarizeStreak, type StreakPauseRange } from "@/lib/streak/streak";
+
+type TrainingSession = {
+  id: string;
+  started_at: string;
+};
+
+type CompletedExercise = {
+  workout_session_id: string;
+};
 
 export function IntroContent() {
   const router = useRouter();
   const supabase = useMemo(() => createBrowserSupabaseClient(), []);
   const [isSaving, setIsSaving] = useState(false);
+  const [isLoadingStatus, setIsLoadingStatus] = useState(true);
+  const [status, setStatus] = useState({
+    currentStreak: 0,
+    hasTrainedToday: false,
+    isPausedToday: false
+  });
   const [message, setMessage] = useState<string | null>(null);
+
+  useEffect(() => {
+    async function loadStatus() {
+      const [sessionsResult, pausesResult] = await Promise.all([
+        supabase
+          .from("workout_sessions")
+          .select("id, started_at")
+          .neq("status", "started"),
+        supabase
+          .from("streak_pauses")
+          .select("start_date, end_date")
+      ]);
+
+      if (!sessionsResult.error && !pausesResult.error) {
+        const sessionRows = (sessionsResult.data ?? []) as TrainingSession[];
+        const sessionIds = sessionRows.map((session) => session.id);
+        const completedResult = sessionIds.length > 0
+          ? await supabase
+              .from("workout_session_exercises")
+              .select("workout_session_id")
+              .eq("completed", true)
+              .in("workout_session_id", sessionIds)
+          : { data: [], error: null };
+
+        if (completedResult.error) {
+          setIsLoadingStatus(false);
+          return;
+        }
+
+        const trainedSessionIds = new Set(
+          ((completedResult.data ?? []) as CompletedExercise[]).map((exercise) => exercise.workout_session_id)
+        );
+        const trainedDays = new Set(
+          sessionRows
+            .filter((session) => trainedSessionIds.has(session.id))
+            .map((session) => localDateKey(new Date(session.started_at)))
+        );
+        const summary = summarizeStreak(trainedDays, (pausesResult.data ?? []) as StreakPauseRange[]);
+
+        setStatus({
+          currentStreak: summary.currentStreak,
+          hasTrainedToday: summary.hasTrainedToday,
+          isPausedToday: summary.isPausedToday
+        });
+      }
+
+      setIsLoadingStatus(false);
+    }
+
+    void loadStatus();
+  }, [supabase]);
 
   async function completeIntro() {
     setIsSaving(true);
@@ -62,6 +131,27 @@ export function IntroContent() {
         </div>
       </section>
 
+      <section className="home-status-grid">
+        <article className="card home-status-card">
+          <Flame aria-hidden="true" />
+          <span>Streak</span>
+          <strong>{isLoadingStatus ? "..." : `${status.currentStreak} dagar`}</strong>
+        </article>
+        <article className="card home-status-card">
+          <CalendarCheck2 aria-hidden="true" />
+          <span>Idag</span>
+          <strong>
+            {isLoadingStatus
+              ? "..."
+              : status.hasTrainedToday
+                ? "Tränat"
+                : status.isPausedToday
+                  ? "Paus"
+                  : "Redo"}
+          </strong>
+        </article>
+      </section>
+
       <section className="card intro-card">
         <h2 className="section-title">Så funkar det</h2>
         <p className="muted">
@@ -74,6 +164,17 @@ export function IntroContent() {
           Kom igång
           {!isSaving ? <ArrowRight aria-hidden="true" size={20} /> : null}
         </button>
+      </section>
+
+      <section className="quick-actions" aria-label="Snabba val">
+        <Link className="button secondary full" href="/exercises">
+          <Dumbbell aria-hidden="true" size={20} />
+          Välj övningar
+        </Link>
+        <Link className="button secondary full" href="/workouts">
+          <CalendarCheck2 aria-hidden="true" size={20} />
+          Färdiga pass
+        </Link>
       </section>
     </div>
   );

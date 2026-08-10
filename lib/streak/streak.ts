@@ -5,6 +5,15 @@ export type StreakPauseRange = {
   end_date: string;
 };
 
+export type StreakSummary = {
+  currentStreak: number;
+  longestStreak: number;
+  trainedDays: Set<string>;
+  pausedDays: Set<string>;
+  hasTrainedToday: boolean;
+  isPausedToday: boolean;
+};
+
 export function pauseDaysFromRanges(pauses: StreakPauseRange[]) {
   const pausedDays = new Set<string>();
 
@@ -48,4 +57,18 @@ export function calculateLongestStreak(trainedDays: Set<string>, pausedDays: Set
   }
 
   return longest;
+}
+
+export function summarizeStreak(trainedDays: Set<string>, pauses: StreakPauseRange[]): StreakSummary {
+  const pausedDays = pauseDaysFromRanges(pauses);
+  const today = localDateKey();
+
+  return {
+    currentStreak: calculateCurrentStreak(trainedDays, pausedDays),
+    longestStreak: calculateLongestStreak(trainedDays, pausedDays),
+    trainedDays,
+    pausedDays,
+    hasTrainedToday: trainedDays.has(today),
+    isPausedToday: pausedDays.has(today)
+  };
 }

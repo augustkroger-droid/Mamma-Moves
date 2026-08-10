@@ -168,6 +168,38 @@ a {
   line-height: 1.55;
 }
 
+.home-status-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.home-status-card {
+  display: grid;
+  gap: 8px;
+  padding: 16px;
+}
+
+.home-status-card svg {
+  color: var(--color-primary);
+}
+
+.home-status-card span {
+  color: var(--color-muted);
+  font-size: 0.86rem;
+  font-weight: 800;
+}
+
+.home-status-card strong {
+  font-size: 1.35rem;
+  line-height: 1.05;
+}
+
+.quick-actions {
+  display: grid;
+  gap: 10px;
+}
+
 .top-bar {
   display: flex;
   min-height: 42px;
@@ -480,6 +512,17 @@ a {
   margin: 0;
   font-size: clamp(2.3rem, 12vw, 3.4rem);
   line-height: 0.95;
+}
+
+.streak-callout {
+  width: fit-content;
+  justify-self: center;
+  margin: 0;
+  border-radius: 999px;
+  padding: 10px 14px;
+  color: var(--color-primary);
+  background: var(--color-primary-soft);
+  font-weight: 900;
 }
 
 .calendar-panel {

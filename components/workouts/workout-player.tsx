@@ -4,6 +4,8 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { ArrowLeft, ArrowRight, CheckCircle2, Loader2, Square } from "lucide-react";
 import { createBrowserSupabaseClient } from "@/lib/supabase/client";
+import { localDateKey } from "@/lib/dates/local-date";
+import { summarizeStreak, type StreakPauseRange } from "@/lib/streak/streak";
 import {
   clearActiveWorkout,
   readActiveWorkout,
@@ -15,6 +17,16 @@ type SavedSummary = {
   completedCount: number;
   totalCount: number;
   status: "completed" | "abandoned";
+  currentStreak: number;
+};
+
+type SessionForStreak = {
+  id: string;
+  started_at: string;
+};
+
+type CompletedExerciseForStreak = {
+  workout_session_id: string;
 };
 
 function formatDuration(totalSeconds: number) {
@@ -30,6 +42,47 @@ function formatDuration(totalSeconds: number) {
 
 function youtubeEmbedUrl(videoId: string) {
   return `https://www.youtube.com/embed/${videoId}`;
+}
+
+async function loadCurrentStreak(supabase: ReturnType<typeof createBrowserSupabaseClient>) {
+  const [sessionsResult, pausesResult] = await Promise.all([
+    supabase
+      .from("workout_sessions")
+      .select("id, started_at")
+      .neq("status", "started"),
+    supabase
+      .from("streak_pauses")
+      .select("start_date, end_date")
+  ]);
+
+  if (sessionsResult.error || pausesResult.error) {
+    return 0;
+  }
+
+  const sessionRows = (sessionsResult.data ?? []) as SessionForStreak[];
+  const sessionIds = sessionRows.map((session) => session.id);
+  const completedResult = sessionIds.length > 0
+    ? await supabase
+        .from("workout_session_exercises")
+        .select("workout_session_id")
+        .eq("completed", true)
+        .in("workout_session_id", sessionIds)
+    : { data: [], error: null };
+
+  if (completedResult.error) {
+    return 0;
+  }
+
+  const trainedSessionIds = new Set(
+    ((completedResult.data ?? []) as CompletedExerciseForStreak[]).map((exercise) => exercise.workout_session_id)
+  );
+  const trainedDays = new Set(
+    sessionRows
+      .filter((session) => trainedSessionIds.has(session.id))
+      .map((session) => localDateKey(new Date(session.started_at)))
+  );
+
+  return summarizeStreak(trainedDays, (pausesResult.data ?? []) as StreakPauseRange[]).currentStreak;
 }
 
 export function WorkoutPlayer() {
@@ -114,12 +167,15 @@ export function WorkoutPlayer() {
       return;
     }
 
+    const currentStreak = await loadCurrentStreak(supabase);
+
     clearActiveWorkout();
     setSummary({
       durationSeconds,
       completedCount,
       totalCount: workout.exercises.length,
-      status
+      status,
+      currentStreak
     });
     setIsSaving(false);
   }
@@ -149,6 +205,9 @@ export function WorkoutPlayer() {
             {formatDuration(summary.durationSeconds)} aktiv träning · {summary.completedCount} av{" "}
             {summary.totalCount} övningar.
           </p>
+          {summary.completedCount > 0 ? (
+            <p className="streak-callout">{summary.currentStreak} dagars streak</p>
+          ) : null}
           <Link className="button full" href="/calendar">
             Se kalendern
           </Link>
