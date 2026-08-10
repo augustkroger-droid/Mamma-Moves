@@ -752,6 +752,7 @@ a {
 }
 
 .form-field input,
+.form-field select,
 .form-field textarea {
   width: 100%;
   border: 1px solid var(--color-border);
@@ -761,7 +762,8 @@ a {
   background: var(--color-surface);
 }
 
-.form-field input {
+.form-field input,
+.form-field select {
   min-height: 50px;
 }
 
@@ -771,6 +773,7 @@ a {
 }
 
 .form-field input:focus,
+.form-field select:focus,
 .form-field textarea:focus {
   border-color: var(--color-primary);
   outline: 3px solid var(--color-primary-soft);
@@ -1206,6 +1209,16 @@ a {
   padding: 18px;
 }
 
+.notification-time-field {
+  max-width: 220px;
+}
+
+.notification-actions {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 10px;
+}
+
 .pause-card p {
   margin: 8px 0 0;
   line-height: 1.45;
@@ -1214,6 +1227,13 @@ a {
 .notification-card p {
   margin: 8px 0 0;
   line-height: 1.45;
+}
+
+@media (min-width: 560px) {
+  .notification-actions {
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: center;
+  }
 }
 
 .video-frame {

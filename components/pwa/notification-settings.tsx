@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { Bell, BellOff, Loader2 } from "lucide-react";
+import { Bell, BellOff, Loader2, Save } from "lucide-react";
 import { createBrowserSupabaseClient } from "@/lib/supabase/client";
 
 function urlBase64ToUint8Array(base64String: string) {
@@ -21,11 +21,14 @@ function supportsPushNotifications() {
   return "serviceWorker" in navigator && "PushManager" in window && "Notification" in window;
 }
 
+const reminderTimeOptions = Array.from({ length: 24 }, (_, hour) => `${hour.toString().padStart(2, "0")}:00`);
+
 export function NotificationSettings() {
   const supabase = useMemo(() => createBrowserSupabaseClient(), []);
   const [isSupported, setIsSupported] = useState(false);
   const [isSubscribed, setIsSubscribed] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [reminderTime, setReminderTime] = useState("14:00");
   const [message, setMessage] = useState<string | null>(null);
 
   useEffect(() => {
@@ -40,14 +43,49 @@ export function NotificationSettings() {
       const registration = await navigator.serviceWorker.ready;
       const subscription = await registration.pushManager.getSubscription();
       setIsSubscribed(Boolean(subscription));
+
+      if (subscription) {
+        const { data } = await supabase
+          .from("push_subscriptions")
+          .select("reminder_time")
+          .eq("endpoint", subscription.endpoint)
+          .maybeSingle();
+
+        if (data?.reminder_time) {
+          setReminderTime(data.reminder_time.slice(0, 5));
+        }
+      }
     }
 
     void loadSubscription();
-  }, []);
+  }, [supabase]);
 
   async function getAccessToken() {
     const { data } = await supabase.auth.getSession();
     return data.session?.access_token ?? null;
+  }
+
+  async function saveSubscription(subscription: PushSubscription) {
+    const token = await getAccessToken();
+
+    if (!token) {
+      throw new Error("Logga in igen för att spara notisinställningen.");
+    }
+
+    const subscriptionJson = subscription.toJSON();
+    const response = await fetch("/api/push/subscribe", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`
+      },
+      body: JSON.stringify({ ...subscriptionJson, reminderTime })
+    });
+
+    if (!response.ok) {
+      const result = await response.json().catch(() => null) as { error?: string } | null;
+      throw new Error(result?.error ?? "Kunde inte spara notisinställningen.");
+    }
   }
 
   async function enableNotifications() {
@@ -70,40 +108,49 @@ export function NotificationSettings() {
         return;
       }
 
-      const token = await getAccessToken();
-
-      if (!token) {
-        setMessage("Logga in igen för att slå på notiser.");
-        setIsSaving(false);
-        return;
-      }
-
       const registration = await navigator.serviceWorker.ready;
       const subscription = await registration.pushManager.subscribe({
         userVisibleOnly: true,
         applicationServerKey: urlBase64ToUint8Array(vapidPublicKey)
       });
 
-      const response = await fetch("/api/push/subscribe", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`
-        },
-        body: JSON.stringify(subscription.toJSON())
-      });
-
-      if (!response.ok) {
-        const result = await response.json().catch(() => null) as { error?: string } | null;
+      try {
+        await saveSubscription(subscription);
+      } catch (error) {
         await subscription.unsubscribe();
         setIsSubscribed(false);
-        throw new Error(result?.error ?? "Kunde inte spara notisinställningen.");
+        throw error;
       }
 
       setIsSubscribed(true);
-      setMessage("Påminnelser är på. Du får en peppig streak-notis om du inte tränat vid 14-tiden.");
+      setMessage(`Påminnelser är på. Du får en peppig streak-notis runt ${reminderTime} om du inte tränat.`);
     } catch (error) {
       setMessage(error instanceof Error ? error.message : "Kunde inte slå på notiser.");
+    }
+
+    setIsSaving(false);
+  }
+
+  async function saveReminderTime() {
+    setIsSaving(true);
+    setMessage(null);
+
+    try {
+      const registration = await navigator.serviceWorker.ready;
+      const subscription = await registration.pushManager.getSubscription();
+
+      if (!subscription) {
+        setIsSubscribed(false);
+        setMessage("Slå på påminnelser igen för att välja tid.");
+        setIsSaving(false);
+        return;
+      }
+
+      await saveSubscription(subscription);
+      setIsSubscribed(true);
+      setMessage(`Påminnelsetiden är sparad till ${reminderTime}.`);
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : "Kunde inte spara påminnelsetiden.");
     }
 
     setIsSaving(false);
@@ -154,24 +201,50 @@ export function NotificationSettings() {
     <section className="card notification-card">
       <div>
         <h2 className="section-title">Streak-påminnelser</h2>
-        <p className="muted">Få en peppig notis om du inte tränat vid 14-tiden.</p>
+        <p className="muted">Välj när du vill få en peppig notis om du inte tränat den dagen.</p>
       </div>
+      <label className="form-field notification-time-field">
+        <span>Påminnelsetid</span>
+        <select
+          value={reminderTime}
+          onChange={(event) => setReminderTime(event.target.value)}
+        >
+          {reminderTimeOptions.map((time) => (
+            <option key={time} value={time}>
+              {time}
+            </option>
+          ))}
+        </select>
+      </label>
       {message ? <p className="form-message">{message}</p> : null}
-      <button
-        className={`button ${isSubscribed ? "secondary" : ""} full`}
-        type="button"
-        onClick={isSubscribed ? disableNotifications : enableNotifications}
-        disabled={isSaving}
-      >
-        {isSaving ? (
-          <Loader2 className="spin" aria-hidden="true" size={20} />
-        ) : isSubscribed ? (
-          <BellOff aria-hidden="true" size={20} />
-        ) : (
-          <Bell aria-hidden="true" size={20} />
-        )}
-        {isSubscribed ? "Stäng av påminnelser" : "Slå på påminnelser"}
-      </button>
+      <div className="notification-actions">
+        <button
+          className="button full"
+          type="button"
+          onClick={isSubscribed ? saveReminderTime : enableNotifications}
+          disabled={isSaving}
+        >
+          {isSaving ? (
+            <Loader2 className="spin" aria-hidden="true" size={20} />
+          ) : isSubscribed ? (
+            <Save aria-hidden="true" size={20} />
+          ) : (
+            <Bell aria-hidden="true" size={20} />
+          )}
+          {isSubscribed ? "Spara påminnelsetid" : "Slå på påminnelser"}
+        </button>
+        {isSubscribed ? (
+          <button
+            className="button secondary full"
+            type="button"
+            onClick={disableNotifications}
+            disabled={isSaving}
+          >
+            <BellOff aria-hidden="true" size={20} />
+            Stäng av
+          </button>
+        ) : null}
+      </div>
     </section>
   );
 }

@@ -8,6 +8,8 @@ type PushSubscriptionRow = {
   endpoint: string;
   p256dh: string;
   auth: string;
+  reminder_time: string;
+  last_daily_streak_reminder_date: string | null;
 };
 
 type SessionRow = {
@@ -43,6 +45,20 @@ function stockholmDateKey(date = new Date()) {
   const day = parts.find((part) => part.type === "day")?.value;
 
   return `${year}-${month}-${day}`;
+}
+
+function stockholmHour(date = new Date()) {
+  const hour = new Intl.DateTimeFormat("sv-SE", {
+    timeZone: "Europe/Stockholm",
+    hour: "2-digit",
+    hour12: false
+  }).format(date);
+
+  if (hour === "24") {
+    return "00";
+  }
+
+  return hour.padStart(2, "0");
 }
 
 function toPushSubscription(row: PushSubscriptionRow): PushSubscription {
@@ -83,10 +99,12 @@ export async function GET(request: Request) {
 
   const supabase = createServerSupabaseAdminClient();
   const today = stockholmDateKey();
+  const currentHour = stockholmHour();
   const { data: subscriptions, error: subscriptionError } = await supabase
     .from("push_subscriptions")
-    .select("id, user_id, endpoint, p256dh, auth")
-    .eq("daily_streak_enabled", true);
+    .select("id, user_id, endpoint, p256dh, auth, reminder_time, last_daily_streak_reminder_date")
+    .eq("daily_streak_enabled", true)
+    .like("reminder_time", `${currentHour}:%`);
 
   if (subscriptionError) {
     return Response.json({ ok: false, error: subscriptionError.message }, { status: 500 });
@@ -95,6 +113,10 @@ export async function GET(request: Request) {
   const subscriptionsByUser = new Map<string, PushSubscriptionRow[]>();
 
   for (const subscription of (subscriptions ?? []) as PushSubscriptionRow[]) {
+    if (subscription.last_daily_streak_reminder_date === today) {
+      continue;
+    }
+
     subscriptionsByUser.set(subscription.user_id, [
       ...(subscriptionsByUser.get(subscription.user_id) ?? []),
       subscription
@@ -185,6 +207,10 @@ export async function GET(request: Request) {
     for (const subscription of subscriptionsByUser.get(userId) ?? []) {
       try {
         await webpush.sendNotification(toPushSubscription(subscription), payload);
+        await supabase
+          .from("push_subscriptions")
+          .update({ last_daily_streak_reminder_date: today, updated_at: new Date().toISOString() })
+          .eq("id", subscription.id);
         sent += 1;
       } catch (error) {
         failed += 1;

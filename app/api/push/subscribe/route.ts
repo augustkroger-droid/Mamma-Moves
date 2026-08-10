@@ -5,11 +5,26 @@ import type { Database } from "@/types/database";
 
 type PushSubscriptionPayload = {
   endpoint?: string;
+  reminderTime?: string;
   keys?: {
     p256dh?: string;
     auth?: string;
   };
 };
+
+function normalizeReminderTime(value: string | undefined) {
+  if (!value || !/^\d{2}:\d{2}$/.test(value)) {
+    return "14:00";
+  }
+
+  const [hour, minute] = value.split(":").map(Number);
+
+  if (hour < 0 || hour > 23 || minute < 0 || minute > 59) {
+    return "14:00";
+  }
+
+  return value;
+}
 
 async function getAuthenticatedUser(request: Request) {
   const token = request.headers.get("authorization")?.replace("Bearer ", "");
@@ -57,6 +72,7 @@ export async function POST(request: Request) {
       auth: subscription.keys.auth,
       user_agent: request.headers.get("user-agent"),
       daily_streak_enabled: true,
+      reminder_time: normalizeReminderTime(subscription.reminderTime),
       last_seen_at: now,
       updated_at: now
     }, { onConflict: "endpoint" });

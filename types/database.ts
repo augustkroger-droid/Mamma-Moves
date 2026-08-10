@@ -241,6 +241,8 @@ export type Database = {
           auth: string;
           user_agent: string | null;
           daily_streak_enabled: boolean;
+          reminder_time: string;
+          last_daily_streak_reminder_date: string | null;
           last_seen_at: string;
           created_at: string;
           updated_at: string;
@@ -253,6 +255,8 @@ export type Database = {
           auth: string;
           user_agent?: string | null;
           daily_streak_enabled?: boolean;
+          reminder_time?: string;
+          last_daily_streak_reminder_date?: string | null;
           last_seen_at?: string;
           created_at?: string;
           updated_at?: string;
@@ -263,6 +267,8 @@ export type Database = {
           auth?: string;
           user_agent?: string | null;
           daily_streak_enabled?: boolean;
+          reminder_time?: string;
+          last_daily_streak_reminder_date?: string | null;
           last_seen_at?: string;
           updated_at?: string;
         };
