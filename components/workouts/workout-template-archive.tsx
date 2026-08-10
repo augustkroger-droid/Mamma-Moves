@@ -44,6 +44,7 @@ export function WorkoutTemplateArchive() {
         .from("workout_template_archives")
         .select("workout_template_id")
         .eq("user_id", userData.user.id)
+        .is("deleted_at", null)
         .order("archived_at", { ascending: false });
 
       if (archiveError) {
@@ -156,13 +157,18 @@ export function WorkoutTemplateArchive() {
   }
 
   async function deleteTemplate(templateId: string) {
+    if (!userId) {
+      return;
+    }
+
     setErrorMessage(null);
     setBusyIds((current) => new Set(current).add(templateId));
 
     const { error } = await supabase
-      .from("workout_templates")
-      .delete()
-      .eq("id", templateId);
+      .from("workout_template_archives")
+      .update({ deleted_at: new Date().toISOString() })
+      .eq("user_id", userId)
+      .eq("workout_template_id", templateId);
 
     if (error) {
       setErrorMessage(error.message);
@@ -196,7 +202,7 @@ export function WorkoutTemplateArchive() {
       <header>
         <p className="eyebrow">Arkiv</p>
         <h1 className="page-title">Arkiverade pass.</h1>
-        <p className="page-lead">Här kan du hämta tillbaka pass till passidan eller radera egna pass permanent.</p>
+        <p className="page-lead">Här kan du hämta tillbaka pass till passidan eller radera dem från ditt konto.</p>
       </header>
 
       {errorMessage ? <p className="form-message" role="alert">{errorMessage}</p> : null}
@@ -213,7 +219,6 @@ export function WorkoutTemplateArchive() {
             const thumbnailUrl = template.thumbnail_url || (
               firstExercise ? youtubeThumbnail(firstExercise.youtube_video_id) : null
             );
-            const isOwnTemplate = template.created_by === userId;
 
             return (
               <article key={template.id} className="template-card card">
@@ -246,17 +251,15 @@ export function WorkoutTemplateArchive() {
                     )}
                     Hämta tillbaka
                   </button>
-                  {isOwnTemplate ? (
-                    <button
-                      className="button danger"
-                      type="button"
-                      onClick={() => deleteTemplate(template.id)}
-                      disabled={busyIds.has(template.id)}
-                    >
-                      <Trash2 aria-hidden="true" size={18} />
-                      Radera permanent
-                    </button>
-                  ) : null}
+                  <button
+                    className="button danger"
+                    type="button"
+                    onClick={() => deleteTemplate(template.id)}
+                    disabled={busyIds.has(template.id)}
+                  >
+                    <Trash2 aria-hidden="true" size={18} />
+                    Radera permanent
+                  </button>
                 </div>
               </article>
             );

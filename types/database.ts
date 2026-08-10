@@ -120,14 +120,17 @@ export type Database = {
           user_id: string;
           workout_template_id: string;
           archived_at: string;
+          deleted_at: string | null;
         };
         Insert: {
           user_id: string;
           workout_template_id: string;
           archived_at?: string;
+          deleted_at?: string | null;
         };
         Update: {
           archived_at?: string;
+          deleted_at?: string | null;
         };
         Relationships: [];
       };
