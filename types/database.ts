@@ -1,0 +1,187 @@
+export type Json = string | number | boolean | null | { [key: string]: Json | undefined } | Json[];
+
+export type Database = {
+  public: {
+    Tables: {
+      profiles: {
+        Row: {
+          id: string;
+          username: string;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id: string;
+          username: string;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          username?: string;
+          updated_at?: string;
+        };
+        Relationships: [];
+      };
+      exercises: {
+        Row: {
+          id: string;
+          name: string;
+          description: string | null;
+          youtube_video_id: string;
+          thumbnail_url: string | null;
+          category: string | null;
+          active: boolean;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          name: string;
+          description?: string | null;
+          youtube_video_id: string;
+          thumbnail_url?: string | null;
+          category?: string | null;
+          active?: boolean;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          name?: string;
+          description?: string | null;
+          youtube_video_id?: string;
+          thumbnail_url?: string | null;
+          category?: string | null;
+          active?: boolean;
+          updated_at?: string;
+        };
+        Relationships: [];
+      };
+      workout_templates: {
+        Row: {
+          id: string;
+          name: string;
+          description: string | null;
+          thumbnail_url: string | null;
+          category: string | null;
+          active: boolean;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          name: string;
+          description?: string | null;
+          thumbnail_url?: string | null;
+          category?: string | null;
+          active?: boolean;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          name?: string;
+          description?: string | null;
+          thumbnail_url?: string | null;
+          category?: string | null;
+          active?: boolean;
+          updated_at?: string;
+        };
+        Relationships: [];
+      };
+      workout_template_exercises: {
+        Row: {
+          workout_template_id: string;
+          exercise_id: string;
+          position: number;
+        };
+        Insert: {
+          workout_template_id: string;
+          exercise_id: string;
+          position: number;
+        };
+        Update: {
+          position?: number;
+        };
+        Relationships: [];
+      };
+      workout_sessions: {
+        Row: {
+          id: string;
+          user_id: string;
+          workout_template_id: string | null;
+          started_at: string;
+          completed_at: string | null;
+          duration_seconds: number;
+          status: "started" | "completed" | "abandoned";
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          user_id: string;
+          workout_template_id?: string | null;
+          started_at?: string;
+          completed_at?: string | null;
+          duration_seconds?: number;
+          status?: "started" | "completed" | "abandoned";
+          created_at?: string;
+        };
+        Update: {
+          completed_at?: string | null;
+          duration_seconds?: number;
+          status?: "started" | "completed" | "abandoned";
+        };
+        Relationships: [];
+      };
+      workout_session_exercises: {
+        Row: {
+          id: string;
+          workout_session_id: string;
+          exercise_id: string;
+          position: number;
+          completed: boolean;
+          started_at: string | null;
+          completed_at: string | null;
+        };
+        Insert: {
+          id?: string;
+          workout_session_id: string;
+          exercise_id: string;
+          position: number;
+          completed?: boolean;
+          started_at?: string | null;
+          completed_at?: string | null;
+        };
+        Update: {
+          completed?: boolean;
+          started_at?: string | null;
+          completed_at?: string | null;
+        };
+        Relationships: [];
+      };
+      streak_pauses: {
+        Row: {
+          id: string;
+          user_id: string;
+          start_date: string;
+          end_date: string;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          user_id: string;
+          start_date: string;
+          end_date: string;
+          created_at?: string;
+        };
+        Update: {
+          start_date?: string;
+          end_date?: string;
+        };
+        Relationships: [];
+      };
+    };
+    Views: Record<string, never>;
+    Functions: Record<string, never>;
+    Enums: Record<string, never>;
+    CompositeTypes: Record<string, never>;
+  };
+};

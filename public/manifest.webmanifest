@@ -1,0 +1,17 @@
+{
+  "name": "Mamma Moves",
+  "short_name": "Mamma Moves",
+  "description": "Din alldeles egna traningsapp.",
+  "start_url": "/intro",
+  "display": "standalone",
+  "background_color": "#fffaf7",
+  "theme_color": "#8f2634",
+  "icons": [
+    {
+      "src": "/icons/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
