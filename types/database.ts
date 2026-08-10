@@ -7,17 +7,23 @@ export type Database = {
         Row: {
           id: string;
           username: string;
+          has_seen_intro: boolean;
+          intro_seen_at: string | null;
           created_at: string;
           updated_at: string;
         };
         Insert: {
           id: string;
           username: string;
+          has_seen_intro?: boolean;
+          intro_seen_at?: string | null;
           created_at?: string;
           updated_at?: string;
         };
         Update: {
           username?: string;
+          has_seen_intro?: boolean;
+          intro_seen_at?: string | null;
           updated_at?: string;
         };
         Relationships: [];

@@ -157,6 +157,17 @@ a {
   line-height: 1.4;
 }
 
+.intro-card {
+  display: grid;
+  gap: 14px;
+  padding: 18px;
+}
+
+.intro-card p {
+  margin: 0;
+  line-height: 1.55;
+}
+
 .top-bar {
   display: flex;
   min-height: 42px;

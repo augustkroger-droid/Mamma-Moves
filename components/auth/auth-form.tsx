@@ -1,7 +1,7 @@
 "use client";
 
 import { FormEvent, useMemo, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { Heart, Loader2 } from "lucide-react";
 import { createBrowserSupabaseClient } from "@/lib/supabase/client";
 
@@ -9,6 +9,7 @@ type AuthMode = "login" | "signup";
 
 export function AuthForm() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const supabase = useMemo(() => createBrowserSupabaseClient(), []);
   const [mode, setMode] = useState<AuthMode>("login");
   const [email, setEmail] = useState("");
@@ -16,6 +17,21 @@ export function AuthForm() {
   const [password, setPassword] = useState("");
   const [message, setMessage] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+
+  async function getPostLoginHref() {
+    const nextHref = searchParams.get("next");
+
+    if (nextHref && nextHref.startsWith("/") && !nextHref.startsWith("/login")) {
+      return nextHref;
+    }
+
+    const { data } = await supabase
+      .from("profiles")
+      .select("has_seen_intro")
+      .maybeSingle();
+
+    return data?.has_seen_intro ? "/exercises" : "/intro";
+  }
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -52,8 +68,9 @@ export function AuthForm() {
         }
       }
 
+      const targetHref = await getPostLoginHref();
       router.refresh();
-      router.push("/intro");
+      router.push(targetHref);
       return;
     }
 
@@ -72,8 +89,9 @@ export function AuthForm() {
       return;
     }
 
+    const targetHref = await getPostLoginHref();
     router.refresh();
-    router.push("/intro");
+    router.push(targetHref);
   }
 
   async function resetPassword() {
