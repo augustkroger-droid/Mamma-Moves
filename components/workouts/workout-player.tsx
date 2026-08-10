@@ -166,7 +166,7 @@ export function WorkoutPlayer() {
   return (
     <main className="workout-shell">
       <header className="workout-header">
-        <Link className="icon-button" href="/exercises" title="Tillbaka till övningar">
+        <Link className="icon-button" href={workout.returnHref ?? "/exercises"} title="Tillbaka">
           <ArrowLeft aria-hidden="true" size={20} />
         </Link>
         <div>
@@ -179,6 +179,7 @@ export function WorkoutPlayer() {
 
       <section className="video-frame workout-video" aria-label={currentExercise.name}>
         <iframe
+          key={`${currentExercise.id}-${currentIndex}`}
           src={youtubeEmbedUrl(currentExercise.youtube_video_id)}
           title={currentExercise.name}
           allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"

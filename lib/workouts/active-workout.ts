@@ -8,6 +8,7 @@ export type WorkoutExercise = Pick<
 export type ActiveWorkout = {
   title: string;
   workoutTemplateId: string | null;
+  returnHref?: string;
   exercises: WorkoutExercise[];
 };
 

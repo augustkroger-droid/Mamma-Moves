@@ -73,6 +73,7 @@ export function ExerciseLibrary() {
     saveActiveWorkout({
       title: "Eget pass",
       workoutTemplateId: null,
+      returnHref: "/exercises",
       exercises: workoutExercises
     });
     router.push("/workout");

@@ -284,7 +284,8 @@ a {
   overflow: hidden;
 }
 
-.exercise-card button {
+.exercise-card button,
+.template-card button {
   display: grid;
   width: 100%;
   grid-template-columns: 96px minmax(0, 1fr) 42px;
@@ -298,7 +299,9 @@ a {
   cursor: pointer;
 }
 
-.exercise-card img {
+.exercise-card img,
+.template-card img,
+.template-fallback {
   width: 96px;
   aspect-ratio: 16 / 10;
   border-radius: 14px;
@@ -306,19 +309,41 @@ a {
   background: var(--color-surface-soft);
 }
 
+.template-fallback {
+  display: block;
+  background: linear-gradient(135deg, var(--color-primary), var(--color-primary-soft));
+}
+
 .exercise-card strong,
-.exercise-card small {
+.exercise-card small,
+.template-card strong,
+.template-card small,
+.template-card em {
   display: block;
 }
 
-.exercise-card strong {
+.exercise-card strong,
+.template-card strong {
   font-size: 1.02rem;
 }
 
-.exercise-card small {
+.exercise-card small,
+.template-card small {
   margin-top: 4px;
   color: var(--color-muted);
   font-weight: 750;
+}
+
+.template-card {
+  overflow: hidden;
+}
+
+.template-card em {
+  margin-top: 6px;
+  color: var(--color-muted);
+  font-size: 0.86rem;
+  font-style: normal;
+  line-height: 1.35;
 }
 
 .exercise-card.is-selected {
