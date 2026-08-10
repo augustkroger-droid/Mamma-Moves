@@ -62,11 +62,7 @@ export function WorkoutTemplateArchive() {
       }
 
       const [templatesResult, linksResult] = await Promise.all([
-        supabase
-          .from("workout_templates")
-          .select("*")
-          .in("id", templateIds)
-          .order("name", { ascending: true }),
+        supabase.from("workout_templates").select("*").in("id", templateIds).order("name", { ascending: true }),
         supabase
           .from("workout_template_exercises")
           .select("workout_template_id, exercise_id, position")
@@ -219,12 +215,13 @@ export function WorkoutTemplateArchive() {
             const thumbnailUrl = template.thumbnail_url || (
               firstExercise ? youtubeThumbnail(firstExercise.youtube_video_id) : null
             );
+            const isBusy = busyIds.has(template.id);
 
             return (
-              <article key={template.id} className="template-card template-card--compact template-card--archive card">
-                <div className="template-card__link archive-template-summary">
+              <article key={template.id} className="archive-card card">
+                <div className="archive-card__summary">
                   {thumbnailUrl ? (
-                    <Image src={thumbnailUrl} alt="" width={192} height={120} unoptimized />
+                    <Image src={thumbnailUrl} alt="" width={152} height={96} unoptimized />
                   ) : (
                     <span className="template-fallback" aria-hidden="true" />
                   )}
@@ -237,28 +234,28 @@ export function WorkoutTemplateArchive() {
                     {template.description ? <em>{template.description}</em> : null}
                   </span>
                 </div>
-                <div className="template-card__actions">
+                <div className="archive-card__actions" aria-label={`Åtgärder för ${template.name}`}>
                   <button
-                    className="icon-button"
+                    className="archive-card__button"
                     type="button"
                     title="Hämta tillbaka"
                     aria-label={`Hämta tillbaka ${template.name}`}
                     onClick={() => restoreTemplate(template.id)}
-                    disabled={busyIds.has(template.id)}
+                    disabled={isBusy}
                   >
-                    {busyIds.has(template.id) ? (
+                    {isBusy ? (
                       <Loader2 className="spin" aria-hidden="true" size={18} />
                     ) : (
                       <ArchiveRestore aria-hidden="true" size={18} />
                     )}
                   </button>
                   <button
-                    className="icon-button danger"
+                    className="archive-card__button archive-card__button--danger"
                     type="button"
                     title="Radera permanent"
                     aria-label={`Radera ${template.name} permanent från ditt konto`}
                     onClick={() => deleteTemplate(template.id)}
-                    disabled={busyIds.has(template.id)}
+                    disabled={isBusy}
                   >
                     <Trash2 aria-hidden="true" size={18} />
                   </button>
