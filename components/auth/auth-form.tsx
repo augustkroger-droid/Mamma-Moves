@@ -40,9 +40,16 @@ export function AuthForm() {
       }
 
       if (!data.session) {
-        setMessage("Konto skapat. Bekrafta e-posten och logga sedan in har.");
-        setIsLoading(false);
-        return;
+        const { error: signInError } = await supabase.auth.signInWithPassword({
+          email,
+          password
+        });
+
+        if (signInError) {
+          setMessage("Kontot skapades, men Supabase kraver fortfarande att kontot aktiveras.");
+          setIsLoading(false);
+          return;
+        }
       }
 
       router.refresh();
@@ -56,7 +63,11 @@ export function AuthForm() {
     });
 
     if (error) {
-      setMessage(error.message);
+      setMessage(
+        error.message.toLowerCase().includes("email not confirmed")
+          ? "Kontot finns, men ar inte aktiverat i Supabase an."
+          : error.message
+      );
       setIsLoading(false);
       return;
     }
