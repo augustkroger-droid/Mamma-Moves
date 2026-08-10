@@ -94,7 +94,8 @@ export function NotificationSettings() {
       });
 
       if (!response.ok) {
-        throw new Error("Kunde inte spara notisinställningen.");
+        const result = await response.json().catch(() => null) as { error?: string } | null;
+        throw new Error(result?.error ?? "Kunde inte spara notisinställningen.");
       }
 
       setIsSubscribed(true);
