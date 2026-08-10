@@ -2,7 +2,17 @@
 
 import { FormEvent, useCallback, useEffect, useMemo, useState } from "react";
 import Image from "next/image";
-import { ArrowDown, ArrowUp, Edit3, Loader2, Plus, Save, ShieldCheck, X } from "lucide-react";
+import {
+  ArrowDown,
+  ArrowUp,
+  Edit3,
+  Loader2,
+  Plus,
+  Save,
+  ShieldCheck,
+  Trash2,
+  X
+} from "lucide-react";
 import { isAdminEmail } from "@/lib/admin/is-admin";
 import { createBrowserSupabaseClient } from "@/lib/supabase/client";
 import type { Database } from "@/types/database";
@@ -10,6 +20,8 @@ import type { Database } from "@/types/database";
 type Exercise = Database["public"]["Tables"]["exercises"]["Row"];
 type Profile = Database["public"]["Tables"]["profiles"]["Row"];
 type WorkoutTemplate = Database["public"]["Tables"]["workout_templates"]["Row"];
+type TemplateExercise = Database["public"]["Tables"]["workout_template_exercises"]["Row"];
+type TemplateAccess = Database["public"]["Tables"]["workout_template_access"]["Row"];
 
 type ExerciseForm = {
   id: string | null;
@@ -22,6 +34,7 @@ type ExerciseForm = {
 };
 
 type WorkoutForm = {
+  id: string | null;
   name: string;
   description: string;
   category: string;
@@ -41,6 +54,7 @@ const emptyExerciseForm: ExerciseForm = {
 };
 
 const emptyWorkoutForm: WorkoutForm = {
+  id: null,
   name: "",
   description: "",
   category: "",
@@ -91,6 +105,14 @@ function moveItem<T>(items: T[], fromIndex: number, toIndex: number) {
   return next;
 }
 
+function templateVisibilityLabel(template: WorkoutTemplate) {
+  if (!template.created_by) {
+    return "Startpass";
+  }
+
+  return template.visibility === "selected" ? "Valda användare" : "Alla användare";
+}
+
 export function AdminDashboard() {
   const supabase = useMemo(() => createBrowserSupabaseClient(), []);
   const [activeTab, setActiveTab] = useState<"exercises" | "workouts">("exercises");
@@ -110,12 +132,13 @@ export function AdminDashboard() {
     setMessage(null);
 
     const { data: userData } = await supabase.auth.getUser();
+    const currentUserId = userData.user?.id ?? null;
     const admin = isAdminEmail(userData.user?.email);
 
-    setUserId(userData.user?.id ?? null);
+    setUserId(currentUserId);
     setIsAdmin(admin);
 
-    if (!admin) {
+    if (!admin || !currentUserId) {
       setIsLoading(false);
       return;
     }
@@ -123,7 +146,11 @@ export function AdminDashboard() {
     const [exerciseResult, profileResult, templateResult] = await Promise.all([
       supabase.from("exercises").select("*").order("name", { ascending: true }),
       supabase.from("profiles").select("*").order("username", { ascending: true }),
-      supabase.from("workout_templates").select("*").order("created_at", { ascending: false })
+      supabase
+        .from("workout_templates")
+        .select("*")
+        .or(`created_by.is.null,created_by.eq.${currentUserId}`)
+        .order("created_at", { ascending: false })
     ]);
 
     if (exerciseResult.error) {
@@ -206,6 +233,55 @@ export function AdminDashboard() {
     setIsSaving(false);
   }
 
+  async function deleteExercise(exercise: Exercise) {
+    const confirmed = window.confirm(
+      `Är du säker på att du vill radera "${exercise.name}"? Övningen tas bort från pass där den ingår.`
+    );
+
+    if (!confirmed) {
+      return;
+    }
+
+    setIsSaving(true);
+    setMessage(null);
+
+    const linksResult = await supabase
+      .from("workout_template_exercises")
+      .delete()
+      .eq("exercise_id", exercise.id);
+
+    if (linksResult.error) {
+      setMessage(linksResult.error.message);
+      setIsSaving(false);
+      return;
+    }
+
+    const deleteResult = await supabase.from("exercises").delete().eq("id", exercise.id);
+
+    if (deleteResult.error?.code === "23503") {
+      const deactivateResult = await supabase
+        .from("exercises")
+        .update({ active: false, updated_at: new Date().toISOString() })
+        .eq("id", exercise.id);
+
+      if (deactivateResult.error) {
+        setMessage(deactivateResult.error.message);
+      } else {
+        setMessage("Övningen används i historik och har därför inaktiverats.");
+        setExerciseForm((current) => current.id === exercise.id ? emptyExerciseForm : current);
+        await loadAdminData();
+      }
+    } else if (deleteResult.error) {
+      setMessage(deleteResult.error.message);
+    } else {
+      setMessage("Övningen är raderad.");
+      setExerciseForm((current) => current.id === exercise.id ? emptyExerciseForm : current);
+      await loadAdminData();
+    }
+
+    setIsSaving(false);
+  }
+
   function toggleWorkoutExercise(exerciseId: string) {
     setWorkoutForm((current) => ({
       ...current,
@@ -237,7 +313,50 @@ export function AdminDashboard() {
     }));
   }
 
-  async function createAdminWorkout(event: FormEvent<HTMLFormElement>) {
+  async function editWorkout(template: WorkoutTemplate) {
+    setIsSaving(true);
+    setMessage(null);
+
+    const [linksResult, accessResult] = await Promise.all([
+      supabase
+        .from("workout_template_exercises")
+        .select("workout_template_id, exercise_id, position")
+        .eq("workout_template_id", template.id)
+        .order("position", { ascending: true }),
+      supabase
+        .from("workout_template_access")
+        .select("workout_template_id, user_id, created_at")
+        .eq("workout_template_id", template.id)
+    ]);
+
+    if (linksResult.error) {
+      setMessage(linksResult.error.message);
+      setIsSaving(false);
+      return;
+    }
+
+    if (accessResult.error) {
+      setMessage(accessResult.error.message);
+      setIsSaving(false);
+      return;
+    }
+
+    setWorkoutForm({
+      id: template.id,
+      name: template.name,
+      description: template.description ?? "",
+      category: template.category ?? "",
+      visibility: template.visibility === "selected" ? "selected" : "all",
+      exerciseIds: ((linksResult.data ?? []) as TemplateExercise[])
+        .sort((first, second) => first.position - second.position)
+        .map((link) => link.exercise_id),
+      userIds: ((accessResult.data ?? []) as TemplateAccess[]).map((access) => access.user_id)
+    });
+    setActiveTab("workouts");
+    setIsSaving(false);
+  }
+
+  async function saveAdminWorkout(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
 
     if (!userId) {
@@ -257,62 +376,121 @@ export function AdminDashboard() {
     setIsSaving(true);
     setMessage(null);
 
-    const { data: template, error: templateError } = await supabase
-      .from("workout_templates")
-      .insert({
-        name: workoutForm.name,
-        description: workoutForm.description || null,
-        category: workoutForm.category || null,
-        active: true,
-        created_by: userId,
-        visibility: workoutForm.visibility
-      })
-      .select("id")
-      .single();
+    const templatePayload = {
+      name: workoutForm.name,
+      description: workoutForm.description || null,
+      category: workoutForm.category || null,
+      active: true,
+      visibility: workoutForm.visibility,
+      updated_at: new Date().toISOString()
+    };
 
-    if (templateError || !template) {
-      setMessage(templateError?.message ?? "Kunde inte skapa passet.");
+    const templateResult = workoutForm.id
+      ? await supabase
+          .from("workout_templates")
+          .update(templatePayload)
+          .eq("id", workoutForm.id)
+          .select("id")
+          .single()
+      : await supabase
+          .from("workout_templates")
+          .insert({ ...templatePayload, created_by: userId })
+          .select("id")
+          .single();
+
+    if (templateResult.error || !templateResult.data) {
+      setMessage(templateResult.error?.message ?? "Kunde inte spara passet.");
+      setIsSaving(false);
+      return;
+    }
+
+    const templateId = templateResult.data.id;
+
+    const deleteLinksResult = await supabase
+      .from("workout_template_exercises")
+      .delete()
+      .eq("workout_template_id", templateId);
+
+    if (deleteLinksResult.error) {
+      setMessage(deleteLinksResult.error.message);
       setIsSaving(false);
       return;
     }
 
     const linkRows = workoutForm.exerciseIds.map((exerciseId, index) => ({
-      workout_template_id: template.id,
+      workout_template_id: templateId,
       exercise_id: exerciseId,
       position: index + 1
     }));
 
-    const { error: linksError } = await supabase.from("workout_template_exercises").insert(linkRows);
+    const linksResult = await supabase.from("workout_template_exercises").insert(linkRows);
 
-    if (linksError) {
-      setMessage(linksError.message);
+    if (linksResult.error) {
+      setMessage(linksResult.error.message);
+      setIsSaving(false);
+      return;
+    }
+
+    const deleteAccessResult = await supabase
+      .from("workout_template_access")
+      .delete()
+      .eq("workout_template_id", templateId);
+
+    if (deleteAccessResult.error) {
+      setMessage(deleteAccessResult.error.message);
       setIsSaving(false);
       return;
     }
 
     if (workoutForm.visibility === "selected") {
       const accessRows = workoutForm.userIds.map((profileId) => ({
-        workout_template_id: template.id,
+        workout_template_id: templateId,
         user_id: profileId
       }));
-      const { error: accessError } = await supabase.from("workout_template_access").insert(accessRows);
+      const accessResult = await supabase.from("workout_template_access").insert(accessRows);
 
-      if (accessError) {
-        setMessage(accessError.message);
+      if (accessResult.error) {
+        setMessage(accessResult.error.message);
         setIsSaving(false);
         return;
       }
     }
 
-    setMessage("Passet är skapat.");
+    setMessage(workoutForm.id ? "Passet är uppdaterat." : "Passet är skapat.");
     setWorkoutForm(emptyWorkoutForm);
     await loadAdminData();
+    setIsSaving(false);
+  }
+
+  async function deleteWorkout(template: WorkoutTemplate) {
+    const confirmed = window.confirm(
+      `Är du säker på att du vill radera "${template.name}" permanent för alla användare?`
+    );
+
+    if (!confirmed) {
+      return;
+    }
+
+    setIsSaving(true);
+    setMessage(null);
+
+    const { error } = await supabase.from("workout_templates").delete().eq("id", template.id);
+
+    if (error) {
+      setMessage(error.message);
+    } else {
+      setMessage("Passet är permanent raderat.");
+      setWorkoutForm((current) => current.id === template.id ? emptyWorkoutForm : current);
+      await loadAdminData();
+    }
+
     setIsSaving(false);
   }
 
   const selectedWorkoutExercises = workoutForm.exerciseIds
     .map((exerciseId) => exercises.find((exercise) => exercise.id === exerciseId))
     .filter((exercise): exercise is Exercise => Boolean(exercise));
+  const availableWorkoutExercises = exercises.filter((exercise) => exercise.active);
 
   if (isLoading) {
     return (
@@ -338,7 +516,7 @@ export function AdminDashboard() {
       <header>
         <p className="eyebrow">Admin</p>
         <h1 className="page-title">Innehåll.</h1>
-        <p className="page-lead">Skapa övningar och pass som kan visas för alla eller för valda användare.</p>
+        <p className="page-lead">Hantera övningar och gemensamma pass för appen.</p>
       </header>
 
       <div className="segmented-control admin-tabs" role="tablist" aria-label="Adminflikar">
@@ -373,8 +551,8 @@ export function AdminDashboard() {
               <textarea value={exerciseForm.description} onChange={(event) => setExerciseForm((current) => ({ ...current, description: event.target.value }))} rows={3} />
             </label>
             <label className="form-field">
-              <span>Thumbnail URL</span>
-              <input value={exerciseForm.thumbnailUrl} onChange={(event) => setExerciseForm((current) => ({ ...current, thumbnailUrl: event.target.value }))} placeholder="Tomt = YouTube-thumbnail" />
+              <span>Bildlänk</span>
+              <input value={exerciseForm.thumbnailUrl} onChange={(event) => setExerciseForm((current) => ({ ...current, thumbnailUrl: event.target.value }))} placeholder="Tomt = YouTube-bild" />
             </label>
             <label className="check-row">
               <input type="checkbox" checked={exerciseForm.active} onChange={(event) => setExerciseForm((current) => ({ ...current, active: event.target.checked }))} />
@@ -404,17 +582,22 @@ export function AdminDashboard() {
                     <small>{exercise.category || "Övning"} · {exercise.active ? "Aktiv" : "Inaktiv"}</small>
                   </span>
                 </div>
-                <button className="icon-button" type="button" onClick={() => editExercise(exercise)} title="Redigera">
-                  <Edit3 aria-hidden="true" size={18} />
-                </button>
+                <div className="template-card__actions">
+                  <button className="icon-button" type="button" onClick={() => editExercise(exercise)} title="Redigera">
+                    <Edit3 aria-hidden="true" size={18} />
+                  </button>
+                  <button className="icon-button danger-icon-button" type="button" onClick={() => deleteExercise(exercise)} title="Radera">
+                    <Trash2 aria-hidden="true" size={18} />
+                  </button>
+                </div>
               </article>
             ))}
           </section>
         </>
       ) : (
         <>
-          <form className="card workout-editor-panel" onSubmit={createAdminWorkout}>
-            <h2 className="section-title">Nytt pass</h2>
+          <form className="card workout-editor-panel" onSubmit={saveAdminWorkout}>
+            <h2 className="section-title">{workoutForm.id ? "Redigera pass" : "Nytt pass"}</h2>
             <label className="form-field">
               <span>Namn</span>
               <input value={workoutForm.name} onChange={(event) => setWorkoutForm((current) => ({ ...current, name: event.target.value }))} required />
@@ -476,16 +659,24 @@ export function AdminDashboard() {
               </div>
             )}
 
-            <button className="button full" type="submit" disabled={isSaving}>
-              {isSaving ? <Loader2 className="spin" aria-hidden="true" size={20} /> : <Save aria-hidden="true" size={20} />}
-              Skapa pass
-            </button>
+            <div className="admin-inline-actions">
+              <button className="button full" type="submit" disabled={isSaving}>
+                {isSaving ? <Loader2 className="spin" aria-hidden="true" size={20} /> : <Save aria-hidden="true" size={20} />}
+                {workoutForm.id ? "Spara pass" : "Skapa pass"}
+              </button>
+              {workoutForm.id ? (
+                <button className="button secondary full" type="button" onClick={() => setWorkoutForm(emptyWorkoutForm)}>
+                  <X aria-hidden="true" size={20} />
+                  Avbryt
+                </button>
+              ) : null}
+            </div>
           </form>
 
           <section className="card workout-editor-panel">
             <h2 className="section-title">Lägg till övningar</h2>
             <div className="available-exercise-list">
-              {exercises.filter((exercise) => exercise.active).map((exercise) => (
+              {availableWorkoutExercises.map((exercise) => (
                 <button key={exercise.id} type="button" onClick={() => toggleWorkoutExercise(exercise.id)} disabled={workoutForm.exerciseIds.includes(exercise.id)}>
                   <Plus aria-hidden="true" size={18} />
                   <span>
@@ -498,15 +689,25 @@ export function AdminDashboard() {
           </section>
 
           <section className="card workout-editor-panel">
-            <h2 className="section-title">Senaste pass</h2>
+            <h2 className="section-title">Pass i appen</h2>
             {templates.length === 0 ? (
               <p className="muted">Inga pass ännu.</p>
             ) : (
               <div className="admin-list">
-                {templates.slice(0, 8).map((template) => (
+                {templates.map((template) => (
                   <article key={template.id} className="admin-row">
-                    <strong>{template.name}</strong>
-                    <span>{template.created_by ? template.visibility : "Startpass"}</span>
+                    <span className="admin-row__body">
+                      <strong>{template.name}</strong>
+                      <small>{templateVisibilityLabel(template)}</small>
+                    </span>
+                    <span className="admin-row__actions">
+                      <button className="icon-button" type="button" onClick={() => void editWorkout(template)} title="Redigera pass">
+                        <Edit3 aria-hidden="true" size={18} />
+                      </button>
+                      <button className="icon-button danger-icon-button" type="button" onClick={() => void deleteWorkout(template)} title="Radera permanent">
+                        <Trash2 aria-hidden="true" size={18} />
+                      </button>
+                    </span>
                   </article>
                 ))}
               </div>

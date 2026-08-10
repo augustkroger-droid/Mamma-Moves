@@ -125,7 +125,7 @@ export function IntroContent() {
           <div className="video-placeholder">
             <div>
               <Play aria-hidden="true" size={38} />
-              <p style={{ margin: "10px 0 0", fontWeight: 800 }}>Introvideo kommer här</p>
+              <p style={{ margin: "10px 0 0", fontWeight: 800 }}>Mamma Moves</p>
             </div>
           </div>
         </div>

@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { Archive, ArrowRight, Loader2, Plus } from "lucide-react";
+import { isAdminEmail } from "@/lib/admin/is-admin";
 import { createBrowserSupabaseClient } from "@/lib/supabase/client";
 import { type WorkoutExercise } from "@/lib/workouts/active-workout";
 import type { Database } from "@/types/database";
@@ -31,6 +32,7 @@ export function WorkoutTemplateList() {
     async function loadTemplates() {
       const { data: userData } = await supabase.auth.getUser();
       const userId = userData.user?.id ?? null;
+      const isAdmin = isAdminEmail(userData.user?.email);
       const { data: templateRows, error: templateError } = await supabase
         .from("workout_templates")
         .select("*")
@@ -61,7 +63,8 @@ export function WorkoutTemplateList() {
       }
 
       const visibleTemplates = ((templateRows ?? []) as WorkoutTemplate[])
-        .filter((template) => !archivedTemplateIds.has(template.id));
+        .filter((template) => !archivedTemplateIds.has(template.id))
+        .filter((template) => !isAdmin || template.created_by === null || template.created_by === userId);
       const templateIds = visibleTemplates.map((template) => template.id);
 
       if (templateIds.length === 0) {

@@ -6,7 +6,7 @@ export default function ExercisesPage() {
       <header>
         <p className="eyebrow">Övningar</p>
         <h1 className="page-title">Välj dagens moves.</h1>
-        <p className="page-lead">Välj flera övningar och skapa ett första slumpat pass.</p>
+        <p className="page-lead">Välj flera övningar, slumpa ordningen och starta ett eget pass.</p>
       </header>
 
       <ExerciseLibrary />

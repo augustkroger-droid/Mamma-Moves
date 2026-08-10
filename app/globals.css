@@ -321,7 +321,8 @@ a {
   cursor: pointer;
 }
 
-.icon-button.danger {
+.icon-button.danger,
+.danger-icon-button {
   color: #fff;
   background: var(--color-primary-strong);
 }
@@ -675,10 +676,21 @@ a {
   background: var(--color-surface-soft);
 }
 
-.admin-row span {
+.admin-row__body {
+  display: grid;
+  gap: 3px;
+}
+
+.admin-row__body small {
   color: var(--color-primary);
   font-size: 0.84rem;
   font-weight: 900;
+}
+
+.admin-row__actions {
+  display: grid;
+  grid-template-columns: repeat(2, 42px);
+  gap: 8px;
 }
 
 .template-detail-header {

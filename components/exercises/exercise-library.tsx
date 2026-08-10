@@ -114,7 +114,7 @@ export function ExerciseLibrary() {
     return (
       <section className="empty-state card">
         <h2 className="section-title">Inga övningar än</h2>
-        <p className="muted">Kör seed-scriptet eller lägg in övningar i Supabase så dyker de upp här.</p>
+        <p className="muted">När övningar har lagts till visas de här.</p>
       </section>
     );
   }

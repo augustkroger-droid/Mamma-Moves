@@ -157,17 +157,31 @@ export function WorkoutTemplateArchive() {
       return;
     }
 
+    const template = templates.find((item) => item.id === templateId);
+
+    if (!template) {
+      return;
+    }
+
+    const confirmed = window.confirm(`Är du säker på att du vill radera "${template.name}" permanent?`);
+
+    if (!confirmed) {
+      return;
+    }
+
     setErrorMessage(null);
     setBusyIds((current) => new Set(current).add(templateId));
 
-    const { error } = await supabase
-      .from("workout_template_archives")
-      .update({ deleted_at: new Date().toISOString() })
-      .eq("user_id", userId)
-      .eq("workout_template_id", templateId);
+    const result = template.created_by === userId && template.visibility === "private"
+      ? await supabase.from("workout_templates").delete().eq("id", templateId)
+      : await supabase
+          .from("workout_template_archives")
+          .update({ deleted_at: new Date().toISOString() })
+          .eq("user_id", userId)
+          .eq("workout_template_id", templateId);
 
-    if (error) {
-      setErrorMessage(error.message);
+    if (result.error) {
+      setErrorMessage(result.error.message);
     } else {
       setTemplates((current) => current.filter((template) => template.id !== templateId));
     }

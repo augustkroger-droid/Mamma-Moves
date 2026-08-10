@@ -62,7 +62,7 @@ export function AuthForm() {
         });
 
         if (signInError) {
-          setMessage("Kontot skapades, men Supabase kraver fortfarande att kontot aktiveras.");
+          setMessage("Kontot skapades, men behöver aktiveras innan du kan logga in.");
           setIsLoading(false);
           return;
         }
@@ -82,7 +82,7 @@ export function AuthForm() {
     if (error) {
       setMessage(
         error.message.toLowerCase().includes("email not confirmed")
-          ? "Kontot finns, men är inte aktiverat i Supabase än."
+          ? "Kontot finns, men är inte aktiverat än."
           : error.message
       );
       setIsLoading(false);
@@ -110,7 +110,7 @@ export function AuthForm() {
     if (error) {
       setMessage(error.message);
     } else {
-      setMessage("Lösenordslänk skickad om adressen finns hos Supabase.");
+      setMessage("Lösenordslänk skickad om adressen finns.");
     }
 
     setIsLoading(false);
@@ -126,7 +126,7 @@ export function AuthForm() {
       <p className="page-lead auth-lead">
         {mode === "login"
           ? "Logga in och kom direkt tillbaka till din träning."
-          : "E-post, användarnamn och lösenord räcker för första versionen."}
+          : "Skapa ett konto för att spara pass, historik och streak."}
       </p>
 
       <div className="segmented-control" role="tablist" aria-label="Välj auth-läge">
