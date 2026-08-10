@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { Loader2 } from "lucide-react";
+import { ChevronLeft, ChevronRight, Loader2 } from "lucide-react";
 import { createBrowserSupabaseClient } from "@/lib/supabase/client";
 import { eachDateInRange, localDateKey } from "@/lib/dates/local-date";
 
@@ -33,12 +33,25 @@ function formatMinutes(seconds: number) {
   return `${Math.max(1, Math.round(seconds / 60))} min`;
 }
 
+function formatMonthLabel(date: Date) {
+  const label = new Intl.DateTimeFormat("sv-SE", {
+    month: "long",
+    year: "numeric"
+  }).format(date);
+
+  return label.charAt(0).toUpperCase() + label.slice(1);
+}
+
 export function TrainingCalendar() {
   const supabase = useMemo(() => createBrowserSupabaseClient(), []);
   const [sessions, setSessions] = useState<TrainingSession[]>([]);
   const [sessionExercises, setSessionExercises] = useState<SessionExercise[]>([]);
   const [exercisesById, setExercisesById] = useState<Map<string, Exercise>>(new Map());
   const [pauses, setPauses] = useState<StreakPause[]>([]);
+  const [viewedMonth, setViewedMonth] = useState(() => {
+    const today = new Date();
+    return new Date(today.getFullYear(), today.getMonth(), 1);
+  });
   const [selectedDay, setSelectedDay] = useState<string>(localDateKey());
   const [isLoading, setIsLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -103,9 +116,21 @@ export function TrainingCalendar() {
     void loadSessions();
   }, [supabase]);
 
-  const today = new Date();
-  const year = today.getFullYear();
-  const month = today.getMonth();
+  function changeMonth(amount: number) {
+    setViewedMonth((currentMonth) => {
+      const nextMonth = new Date(currentMonth.getFullYear(), currentMonth.getMonth() + amount, 1);
+      const today = new Date();
+      const isCurrentMonth =
+        nextMonth.getFullYear() === today.getFullYear() &&
+        nextMonth.getMonth() === today.getMonth();
+
+      setSelectedDay(isCurrentMonth ? localDateKey(today) : localDateKey(nextMonth));
+      return nextMonth;
+    });
+  }
+
+  const year = viewedMonth.getFullYear();
+  const month = viewedMonth.getMonth();
   const daysInMonth = new Date(year, month + 1, 0).getDate();
   const firstWeekday = (new Date(year, month, 1).getDay() + 6) % 7;
   const monthDays = Array.from({ length: daysInMonth }, (_, index) => new Date(year, month, index + 1));
@@ -146,6 +171,15 @@ export function TrainingCalendar() {
   return (
     <>
       <section className="surface calendar-panel" aria-label="Månadskalender">
+        <div className="calendar-header">
+          <button type="button" className="icon-button" onClick={() => changeMonth(-1)} title="Föregående månad">
+            <ChevronLeft aria-hidden="true" size={20} />
+          </button>
+          <h2>{formatMonthLabel(viewedMonth)}</h2>
+          <button type="button" className="icon-button" onClick={() => changeMonth(1)} title="Nästa månad">
+            <ChevronRight aria-hidden="true" size={20} />
+          </button>
+        </div>
         <div className="calendar-grid calendar-weekdays" aria-hidden="true">
           {["M", "T", "O", "T", "F", "L", "S"].map((weekday) => (
             <span key={weekday}>{weekday}</span>

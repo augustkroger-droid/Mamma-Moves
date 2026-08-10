@@ -133,7 +133,7 @@ export function StatsOverview() {
     { label: "Tränade dagar", value: trainedDays.size.toString() },
     { label: "Övningar", value: completedExercises.length.toString() },
     { label: "Streak", value: streakSummary.currentStreak.toString() },
-    { label: "Längsta", value: streakSummary.longestStreak.toString() }
+    { label: "Längsta streak", value: streakSummary.longestStreak.toString() }
   ];
 
   return (
