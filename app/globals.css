@@ -970,24 +970,62 @@ a {
   margin: 8px 0 0;
 }
 
-.week-chart {
+.week-chart-shell {
   display: grid;
-  height: 150px;
+  grid-template-columns: 48px minmax(0, 1fr);
+  gap: 10px;
+  align-items: stretch;
+}
+
+.week-chart-axis {
+  display: grid;
+  height: 132px;
+  align-content: space-between;
+  justify-items: end;
+  padding-top: 2px;
+  color: var(--color-muted);
+  font-size: 0.7rem;
+  font-weight: 850;
+}
+
+.week-chart-area {
+  position: relative;
+}
+
+.week-chart-gridlines {
+  position: absolute;
+  inset: 0 0 30px;
+  display: grid;
+  align-content: space-between;
+  pointer-events: none;
+}
+
+.week-chart-gridlines span {
+  height: 1px;
+  background: var(--color-border);
+}
+
+.week-chart {
+  position: relative;
+  display: grid;
   grid-template-columns: repeat(6, minmax(0, 1fr));
   gap: 10px;
-  align-items: end;
 }
 
 .week-bar {
   display: grid;
-  height: 100%;
-  grid-template-rows: 1fr auto;
+  grid-template-rows: 132px auto;
   gap: 8px;
-  align-items: end;
   text-align: center;
 }
 
-.week-bar span {
+.week-bar__track {
+  display: flex;
+  min-width: 0;
+  align-items: flex-end;
+}
+
+.week-bar__track span {
   display: block;
   width: 100%;
   min-height: 8px;

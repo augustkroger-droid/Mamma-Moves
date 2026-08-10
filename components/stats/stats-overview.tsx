@@ -44,6 +44,40 @@ function formatMinutes(seconds: number) {
   return `${Math.max(1, Math.round(seconds / 60))} min`;
 }
 
+function getNiceChartMax(minutes: number) {
+  if (minutes <= 0) {
+    return 30;
+  }
+
+  const niceMinuteSteps = [10, 15, 30, 45, 60, 90, 120, 180, 240, 360, 480, 600];
+  const predefinedStep = niceMinuteSteps.find((step) => minutes <= step);
+
+  if (predefinedStep) {
+    return predefinedStep;
+  }
+
+  return Math.ceil(minutes / 300) * 300;
+}
+
+function formatAxisMinutes(minutes: number) {
+  if (minutes === 0) {
+    return "0";
+  }
+
+  if (minutes < 60) {
+    return `${minutes} min`;
+  }
+
+  const hours = Math.floor(minutes / 60);
+  const remainingMinutes = minutes % 60;
+
+  if (remainingMinutes === 0) {
+    return `${hours} h`;
+  }
+
+  return `${hours} h ${remainingMinutes}`;
+}
+
 export function StatsOverview() {
   const supabase = useMemo(() => createBrowserSupabaseClient(), []);
   const [sessions, setSessions] = useState<TrainingSession[]>([]);
@@ -168,6 +202,8 @@ export function StatsOverview() {
     };
   });
   const maxWeeklyMinutes = Math.max(1, ...weeklyBuckets.map((bucket) => bucket.minutes));
+  const chartMaxMinutes = getNiceChartMax(maxWeeklyMinutes);
+  const yAxisTicks = [chartMaxMinutes, Math.round(chartMaxMinutes / 2), 0];
   const recentSessions = [...sessions]
     .sort((first, second) => new Date(second.started_at).getTime() - new Date(first.started_at).getTime())
     .slice(0, 4);
@@ -196,13 +232,32 @@ export function StatsOverview() {
           <h2 className="section-title">Senaste veckorna</h2>
           <p className="muted">Aktiva minuter per vecka.</p>
         </div>
-        <div className="week-chart" aria-label="Träning per vecka">
-          {weeklyBuckets.map((bucket) => (
-            <div key={bucket.label} className="week-bar">
-              <span style={{ height: `${Math.max(8, (bucket.minutes / maxWeeklyMinutes) * 100)}%` }} />
-              <small>{bucket.label}</small>
+        <div className="week-chart-shell" aria-label="Träning per vecka">
+          <div className="week-chart-axis" aria-hidden="true">
+            {yAxisTicks.map((tick) => (
+              <span key={tick}>{formatAxisMinutes(tick)}</span>
+            ))}
+          </div>
+          <div className="week-chart-area">
+            <div className="week-chart-gridlines" aria-hidden="true">
+              {yAxisTicks.map((tick) => (
+                <span key={tick} />
+              ))}
             </div>
-          ))}
+            <div className="week-chart">
+              {weeklyBuckets.map((bucket) => (
+                <div key={bucket.label} className="week-bar">
+                  <div className="week-bar__track">
+                    <span
+                      title={`${bucket.minutes} minuter`}
+                      style={{ height: `${Math.max(6, (bucket.minutes / chartMaxMinutes) * 100)}%` }}
+                    />
+                  </div>
+                  <small>{bucket.label}</small>
+                </div>
+              ))}
+            </div>
+          </div>
         </div>
       </section>
 
