@@ -508,6 +508,11 @@ a {
   background: var(--color-primary-soft);
 }
 
+.calendar-grid button.has-pause {
+  color: var(--color-good);
+  background: #e4f2eb;
+}
+
 .calendar-grid strong,
 .calendar-grid small {
   display: block;
@@ -537,9 +542,31 @@ a {
   background: var(--color-surface-soft);
 }
 
+.session-row.is-pause {
+  background: #e4f2eb;
+}
+
 .session-row span {
   color: var(--color-primary);
   font-weight: 900;
+}
+
+.session-row.is-pause span {
+  color: var(--color-good);
+}
+
+.session-detail {
+  display: grid;
+  gap: 8px;
+}
+
+.session-detail ul {
+  display: grid;
+  gap: 5px;
+  margin: 0;
+  padding-left: 1.2rem;
+  color: var(--color-muted);
+  line-height: 1.35;
 }
 
 .stats-grid {
@@ -564,6 +591,17 @@ a {
   margin-top: 8px;
   font-size: 2rem;
   font-weight: 900;
+}
+
+.pause-card {
+  display: grid;
+  gap: 14px;
+  padding: 18px;
+}
+
+.pause-card p {
+  margin: 8px 0 0;
+  line-height: 1.45;
 }
 
 .video-frame {
