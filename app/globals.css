@@ -1087,6 +1087,79 @@ a {
   background: var(--color-primary-soft);
 }
 
+.pwa-install-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 30;
+  display: grid;
+  place-items: end center;
+  padding: 18px;
+  background: rgba(36, 25, 27, 0.32);
+}
+
+.pwa-install-sheet {
+  position: relative;
+  display: grid;
+  width: min(100%, 430px);
+  gap: 14px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  padding: 20px;
+  background: var(--color-surface);
+  box-shadow: 0 24px 70px rgba(36, 25, 27, 0.22);
+}
+
+.pwa-install-close {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+}
+
+.pwa-install-icon {
+  display: grid;
+  width: 56px;
+  height: 56px;
+  place-items: center;
+  border-radius: 18px;
+  color: #fff;
+  background: var(--color-primary);
+}
+
+.pwa-install-sheet h2 {
+  margin: 0;
+  padding-right: 44px;
+  font-size: 1.45rem;
+  line-height: 1.12;
+}
+
+.pwa-install-sheet p {
+  margin: 0;
+  color: var(--color-muted);
+  line-height: 1.45;
+}
+
+.pwa-install-steps {
+  display: grid;
+  gap: 10px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.pwa-install-steps li {
+  display: grid;
+  grid-template-columns: 34px minmax(0, 1fr);
+  gap: 10px;
+  align-items: center;
+  border-radius: var(--radius-sm);
+  padding: 10px;
+  background: var(--color-surface-soft);
+}
+
+.pwa-install-steps svg {
+  color: var(--color-primary);
+}
+
 @media (min-width: 760px) {
   .app-shell {
     padding-top: 36px;
