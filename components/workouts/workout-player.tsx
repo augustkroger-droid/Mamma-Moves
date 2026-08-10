@@ -71,7 +71,7 @@ export function WorkoutPlayer() {
     const { data: userData, error: userError } = await supabase.auth.getUser();
 
     if (userError || !userData.user) {
-      setSaveError("Kunde inte hitta inloggad anvandare.");
+      setSaveError("Kunde inte hitta inloggad användare.");
       setIsSaving(false);
       return;
     }
@@ -129,9 +129,9 @@ export function WorkoutPlayer() {
       <main className="workout-shell">
         <section className="empty-state card">
           <h1 className="section-title">Inget aktivt pass</h1>
-          <p className="muted">Valj ovningar och skapa ett pass forst.</p>
+          <p className="muted">Välj övningar och skapa ett pass först.</p>
           <Link className="button" href="/exercises">
-            Till ovningar
+            Till övningar
           </Link>
         </section>
       </main>
@@ -146,14 +146,14 @@ export function WorkoutPlayer() {
           <p className="eyebrow">Sparat</p>
           <h1>Bra jobbat!</h1>
           <p className="page-lead">
-            {formatDuration(summary.durationSeconds)} aktiv traning · {summary.completedCount} av{" "}
-            {summary.totalCount} ovningar.
+            {formatDuration(summary.durationSeconds)} aktiv träning · {summary.completedCount} av{" "}
+            {summary.totalCount} övningar.
           </p>
           <Link className="button full" href="/calendar">
             Se kalendern
           </Link>
           <Link className="button secondary full" href="/exercises">
-            Trana mer
+            Träna mer
           </Link>
         </section>
       </main>
@@ -166,13 +166,13 @@ export function WorkoutPlayer() {
   return (
     <main className="workout-shell">
       <header className="workout-header">
-        <Link className="icon-button" href="/exercises" title="Tillbaka till ovningar">
+        <Link className="icon-button" href="/exercises" title="Tillbaka till övningar">
           <ArrowLeft aria-hidden="true" size={20} />
         </Link>
         <div>
           <p className="eyebrow">{workout.title}</p>
           <h1>
-            Ovning {currentIndex + 1} av {workout.exercises.length}
+            Övning {currentIndex + 1} av {workout.exercises.length}
           </h1>
         </div>
       </header>
@@ -216,7 +216,7 @@ export function WorkoutPlayer() {
           disabled={isSaving}
         >
           {isSaving ? <Loader2 className="spin" aria-hidden="true" size={18} /> : null}
-          {isLastExercise ? "Slutfor" : "Nasta"}
+          {isLastExercise ? "Slutför" : "Nästa"}
           {!isLastExercise ? <ArrowRight aria-hidden="true" size={18} /> : null}
         </button>
       </footer>

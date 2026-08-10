@@ -6,7 +6,7 @@ export default function CalendarPage() {
       <header>
         <p className="eyebrow">Kalender</p>
         <h1 className="page-title">Din historik.</h1>
-        <p className="page-lead">Har syns passen som sparas nar du avslutar traningen.</p>
+        <p className="page-lead">Här syns passen som sparas när du avslutar träningen.</p>
       </header>
 
       <TrainingCalendar />

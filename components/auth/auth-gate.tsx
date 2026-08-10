@@ -69,7 +69,7 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
     return (
       <main className="app-shell auth-loading" aria-live="polite">
         <Loader2 className="spin" aria-hidden="true" />
-        <p>Hamtar Mamma Moves...</p>
+        <p>Hämtar Mamma Moves...</p>
       </main>
     );
   }

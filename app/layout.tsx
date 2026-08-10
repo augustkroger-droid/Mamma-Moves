@@ -3,7 +3,7 @@ import "./globals.css";
 
 export const metadata: Metadata = {
   title: "Mamma Moves",
-  description: "Din alldeles egna traningsapp.",
+  description: "Din alldeles egna träningsapp.",
   applicationName: "Mamma Moves",
   manifest: "/manifest.webmanifest",
   appleWebApp: {

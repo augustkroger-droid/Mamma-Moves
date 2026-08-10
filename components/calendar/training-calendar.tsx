@@ -65,7 +65,7 @@ export function TrainingCalendar() {
     return (
       <section className="empty-state card" aria-live="polite">
         <Loader2 className="spin" aria-hidden="true" />
-        <p>Hamtar kalender...</p>
+        <p>Hämtar kalender...</p>
       </section>
     );
   }
@@ -73,7 +73,7 @@ export function TrainingCalendar() {
   if (errorMessage) {
     return (
       <section className="empty-state card" role="alert">
-        <h2 className="section-title">Kunde inte hamta kalendern</h2>
+        <h2 className="section-title">Kunde inte hämta kalendern</h2>
         <p className="muted">{errorMessage}</p>
       </section>
     );
@@ -105,7 +105,7 @@ export function TrainingCalendar() {
                 onClick={() => setSelectedDay(key)}
               >
                 <strong>{day.getDate()}</strong>
-                {hasTraining ? <small>Tranat</small> : null}
+                {hasTraining ? <small>Tränat</small> : null}
               </button>
             );
           })}
@@ -115,12 +115,12 @@ export function TrainingCalendar() {
       <section className="card day-details">
         <h2 className="section-title">{selectedDay}</h2>
         {selectedSessions.length === 0 ? (
-          <p className="muted">Ingen traning sparad den har dagen.</p>
+          <p className="muted">Ingen träning sparad den här dagen.</p>
         ) : (
           <div className="screen-stack">
             {selectedSessions.map((session) => (
               <article key={session.id} className="session-row">
-                <strong>{session.status === "completed" ? "Genomfort pass" : "Avslutat pass"}</strong>
+                <strong>{session.status === "completed" ? "Genomfört pass" : "Avslutat pass"}</strong>
                 <span>{formatMinutes(session.duration_seconds)}</span>
               </article>
             ))}

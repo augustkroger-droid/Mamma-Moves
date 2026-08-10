@@ -6,7 +6,7 @@ import { BarChart3, CalendarDays, Dumbbell, Home, ListChecks } from "lucide-reac
 
 const navItems = [
   { href: "/intro", label: "Intro", icon: Home },
-  { href: "/exercises", label: "Ovningar", icon: Dumbbell },
+  { href: "/exercises", label: "Övningar", icon: Dumbbell },
   { href: "/workouts", label: "Pass", icon: ListChecks },
   { href: "/calendar", label: "Kalender", icon: CalendarDays },
   { href: "/stats", label: "Statistik", icon: BarChart3 }

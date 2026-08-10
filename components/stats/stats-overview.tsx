@@ -93,7 +93,7 @@ export function StatsOverview() {
   if (errorMessage) {
     return (
       <section className="empty-state card" role="alert">
-        <h2 className="section-title">Kunde inte hamta statistik</h2>
+        <h2 className="section-title">Kunde inte hämta statistik</h2>
         <p className="muted">{errorMessage}</p>
       </section>
     );
@@ -107,10 +107,10 @@ export function StatsOverview() {
   const stats = [
     { label: "Pass", value: sessions.length.toString() },
     { label: "Minuter", value: totalMinutes.toString() },
-    { label: "Tranade dagar", value: trainedDays.size.toString() },
-    { label: "Ovningar", value: completedExercises.toString() },
+    { label: "Tränade dagar", value: trainedDays.size.toString() },
+    { label: "Övningar", value: completedExercises.toString() },
     { label: "Streak", value: currentStreak.toString() },
-    { label: "Langsta", value: longestStreak.toString() }
+    { label: "Längsta", value: longestStreak.toString() }
   ];
 
   return (

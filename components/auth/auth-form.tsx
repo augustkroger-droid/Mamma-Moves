@@ -65,7 +65,7 @@ export function AuthForm() {
     if (error) {
       setMessage(
         error.message.toLowerCase().includes("email not confirmed")
-          ? "Kontot finns, men ar inte aktiverat i Supabase an."
+          ? "Kontot finns, men är inte aktiverat i Supabase än."
           : error.message
       );
       setIsLoading(false);
@@ -78,7 +78,7 @@ export function AuthForm() {
 
   async function resetPassword() {
     if (!email) {
-      setMessage("Skriv in din e-postadress forst.");
+      setMessage("Skriv in din e-postadress först.");
       return;
     }
 
@@ -92,7 +92,7 @@ export function AuthForm() {
     if (error) {
       setMessage(error.message);
     } else {
-      setMessage("Losenordslank skickad om adressen finns hos Supabase.");
+      setMessage("Lösenordslänk skickad om adressen finns hos Supabase.");
     }
 
     setIsLoading(false);
@@ -104,14 +104,14 @@ export function AuthForm() {
         <Heart />
       </div>
       <p className="eyebrow">Mamma Moves</p>
-      <h1 className="auth-title">{mode === "login" ? "Valkommen tillbaka." : "Skapa konto."}</h1>
+      <h1 className="auth-title">{mode === "login" ? "Välkommen tillbaka." : "Skapa konto."}</h1>
       <p className="page-lead auth-lead">
         {mode === "login"
-          ? "Logga in och kom direkt tillbaka till din traning."
-          : "E-post, anvandarnamn och losenord racker for forsta versionen."}
+          ? "Logga in och kom direkt tillbaka till din träning."
+          : "E-post, användarnamn och lösenord räcker för första versionen."}
       </p>
 
-      <div className="segmented-control" role="tablist" aria-label="Valj auth-lage">
+      <div className="segmented-control" role="tablist" aria-label="Välj auth-läge">
         <button
           type="button"
           role="tab"
@@ -144,7 +144,7 @@ export function AuthForm() {
 
         {mode === "signup" ? (
           <label>
-            <span>Anvandarnamn</span>
+            <span>Användarnamn</span>
             <input
               type="text"
               autoComplete="username"
@@ -157,7 +157,7 @@ export function AuthForm() {
         ) : null}
 
         <label>
-          <span>Losenord</span>
+          <span>Lösenord</span>
           <input
             type="password"
             autoComplete={mode === "login" ? "current-password" : "new-password"}
@@ -177,7 +177,7 @@ export function AuthForm() {
 
         {mode === "login" ? (
           <button className="text-button" type="button" onClick={resetPassword} disabled={isLoading}>
-            Glomt losenord?
+            Glömt lösenord?
           </button>
         ) : null}
       </form>

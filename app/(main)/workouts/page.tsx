@@ -1,9 +1,9 @@
 import { ArrowRight } from "lucide-react";
 
 const workouts = [
-  { name: "Morgonpasset", meta: "6 ovningar · ca 10 min" },
-  { name: "Ben & rumpa", meta: "8 ovningar" },
-  { name: "Lugn traning", meta: "5 ovningar" }
+  { name: "Morgonpasset", meta: "6 övningar · ca 10 min" },
+  { name: "Ben & rumpa", meta: "8 övningar" },
+  { name: "Lugn träning", meta: "5 övningar" }
 ];
 
 export default function WorkoutsPage() {
@@ -11,11 +11,11 @@ export default function WorkoutsPage() {
     <div className="screen-stack">
       <header>
         <p className="eyebrow">Pass</p>
-        <h1 className="page-title">Fardiga pass.</h1>
-        <p className="page-lead">Enkla pass som senare hamtas fran databasen.</p>
+        <h1 className="page-title">Färdiga pass.</h1>
+        <p className="page-lead">Enkla pass som senare hämtas från databasen.</p>
       </header>
 
-      <section className="screen-stack" aria-label="Fardiga pass">
+      <section className="screen-stack" aria-label="Färdiga pass">
         {workouts.map((workout) => (
           <article key={workout.name} className="card" style={{ padding: 18 }}>
             <div style={{ display: "flex", alignItems: "center", gap: 14 }}>

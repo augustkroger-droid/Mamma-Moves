@@ -5,9 +5,9 @@ export default function IntroPage() {
     <div className="screen-stack">
       <header>
         <p className="eyebrow">Mamma Moves</p>
-        <h1 className="page-title">Din alldeles egna traningsapp.</h1>
+        <h1 className="page-title">Din alldeles egna träningsapp.</h1>
         <p className="page-lead">
-          Valj nagra ovningar, starta ett pass och folj videorna direkt har inne.
+          Välj några övningar, starta ett pass och följ videorna direkt här inne.
         </p>
       </header>
 
@@ -16,17 +16,17 @@ export default function IntroPage() {
           <div className="video-placeholder">
             <div>
               <Play aria-hidden="true" size={38} />
-              <p style={{ margin: "10px 0 0", fontWeight: 800 }}>Introvideo kommer har</p>
+              <p style={{ margin: "10px 0 0", fontWeight: 800 }}>Introvideo kommer här</p>
             </div>
           </div>
         </div>
       </section>
 
       <section className="card" style={{ padding: 18 }}>
-        <h2 className="section-title">Sa funkar det</h2>
+        <h2 className="section-title">Så funkar det</h2>
         <p className="muted" style={{ margin: "10px 0 0", lineHeight: 1.55 }}>
-          Borja i Ovningar eller valj ett fardigt pass. Nar passet startar visar appen en
-          video i taget, och du trycker vidare nar du ar klar.
+          Börja i Övningar eller välj ett färdigt pass. När passet startar visar appen en
+          video i taget, och du trycker vidare när du är klar.
         </p>
       </section>
     </div>

@@ -82,7 +82,7 @@ export function ExerciseLibrary() {
     return (
       <section className="empty-state card" aria-live="polite">
         <Loader2 className="spin" aria-hidden="true" />
-        <p>Hamtar ovningar...</p>
+        <p>Hämtar övningar...</p>
       </section>
     );
   }
@@ -90,7 +90,7 @@ export function ExerciseLibrary() {
   if (errorMessage) {
     return (
       <section className="empty-state card" role="alert">
-        <h2 className="section-title">Kunde inte hamta ovningar</h2>
+        <h2 className="section-title">Kunde inte hämta övningar</h2>
         <p className="muted">{errorMessage}</p>
       </section>
     );
@@ -99,15 +99,15 @@ export function ExerciseLibrary() {
   if (exercises.length === 0) {
     return (
       <section className="empty-state card">
-        <h2 className="section-title">Inga ovningar an</h2>
-        <p className="muted">Kor seed-scriptet eller lagg in ovningar i Supabase sa dyker de upp har.</p>
+        <h2 className="section-title">Inga övningar än</h2>
+        <p className="muted">Kör seed-scriptet eller lägg in övningar i Supabase så dyker de upp här.</p>
       </section>
     );
   }
 
   return (
     <>
-      <section className="screen-stack" aria-label="Ovningslista">
+      <section className="screen-stack" aria-label="Övningslista">
         {exercises.map((exercise) => {
           const isSelected = selectedIds.has(exercise.id);
           const thumbnailUrl = exercise.thumbnail_url || youtubeThumbnail(exercise.youtube_video_id);
@@ -118,7 +118,7 @@ export function ExerciseLibrary() {
                 <Image src={thumbnailUrl} alt="" width={192} height={120} unoptimized />
                 <span>
                   <strong>{exercise.name}</strong>
-                  <small>{exercise.category || "Ovning"}</small>
+                  <small>{exercise.category || "Övning"}</small>
                 </span>
                 <span className="select-indicator" aria-hidden="true">
                   {isSelected ? <Check size={20} /> : <PlusCircle size={20} />}
