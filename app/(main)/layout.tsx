@@ -1,6 +1,7 @@
 import { AuthGate } from "@/components/auth/auth-gate";
 import { BottomNav } from "@/components/navigation/bottom-nav";
 import { SignOutButton } from "@/components/auth/sign-out-button";
+import { ResumeWorkoutBanner } from "@/components/workouts/resume-workout-banner";
 
 export default function MainLayout({
   children
@@ -14,6 +15,7 @@ export default function MainLayout({
           <span>Mamma Moves</span>
           <SignOutButton />
         </div>
+        <ResumeWorkoutBanner />
         {children}
       </main>
       <BottomNav />

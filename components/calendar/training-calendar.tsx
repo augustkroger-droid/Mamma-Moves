@@ -1,15 +1,17 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import Link from "next/link";
 import { ChevronLeft, ChevronRight, Loader2 } from "lucide-react";
 import { createBrowserSupabaseClient } from "@/lib/supabase/client";
 import { eachDateInRange, localDateKey } from "@/lib/dates/local-date";
+import { completeOldUnfinishedSessions } from "@/lib/workouts/session-maintenance";
 
 type TrainingSession = {
   id: string;
   started_at: string;
   duration_seconds: number;
-  status: "started" | "completed" | "abandoned";
+  status: "started" | "paused" | "completed" | "abandoned";
 };
 
 type SessionExercise = {
@@ -31,6 +33,18 @@ type StreakPause = {
 
 function formatMinutes(seconds: number) {
   return `${Math.max(1, Math.round(seconds / 60))} min`;
+}
+
+function sessionTitle(status: TrainingSession["status"]) {
+  if (status === "completed") {
+    return "Genomfört pass";
+  }
+
+  if (status === "started" || status === "paused") {
+    return "Pausat pass";
+  }
+
+  return "Avslutat pass";
 }
 
 function formatMonthLabel(date: Date) {
@@ -58,10 +72,11 @@ export function TrainingCalendar() {
 
   useEffect(() => {
     async function loadSessions() {
+      await completeOldUnfinishedSessions(supabase);
+
       const { data: sessionRows, error: sessionError } = await supabase
         .from("workout_sessions")
         .select("id, started_at, duration_seconds, status")
-        .neq("status", "started")
         .order("started_at", { ascending: false });
 
       if (sessionError) {
@@ -229,12 +244,18 @@ export function TrainingCalendar() {
             {selectedSessions.map((session) => (
               <article key={session.id} className="session-detail">
                 <div className="session-row">
-                  <strong>{session.status === "completed" ? "Genomfört pass" : "Avslutat pass"}</strong>
+                  <strong>{sessionTitle(session.status)}</strong>
                   <span>{formatMinutes(session.duration_seconds)}</span>
                 </div>
+                {session.status !== "completed" && localDateKey(new Date(session.started_at)) === localDateKey() ? (
+                  <Link className="button secondary full" href={`/workout?session=${session.id}`}>
+                    Fortsätt
+                  </Link>
+                ) : null}
                 <ul>
                   {sessionExercises
                     .filter((exercise) => exercise.workout_session_id === session.id)
+                    .filter((exercise) => session.status !== "completed" || exercise.completed)
                     .sort((first, second) => first.position - second.position)
                     .map((exercise) => (
                       <li key={exercise.exercise_id}>

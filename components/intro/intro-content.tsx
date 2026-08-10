@@ -35,7 +35,7 @@ export function IntroContent() {
         supabase
           .from("workout_sessions")
           .select("id, started_at")
-          .neq("status", "started"),
+          .in("status", ["completed", "abandoned"]),
         supabase
           .from("streak_pauses")
           .select("start_date, end_date")

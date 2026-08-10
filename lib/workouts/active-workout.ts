@@ -6,6 +6,7 @@ export type WorkoutExercise = Pick<
 >;
 
 export type ActiveWorkout = {
+  sessionId?: string;
   title: string;
   workoutTemplateId: string | null;
   returnHref?: string;

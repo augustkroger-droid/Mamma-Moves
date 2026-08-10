@@ -5,6 +5,7 @@ import { usePathname, useRouter } from "next/navigation";
 import type { User } from "@supabase/supabase-js";
 import { Loader2 } from "lucide-react";
 import { createBrowserSupabaseClient } from "@/lib/supabase/client";
+import { completeOldUnfinishedSessions } from "@/lib/workouts/session-maintenance";
 
 export function AuthGate({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
@@ -63,7 +64,10 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
       });
     }
 
-    void ensureProfile();
+    if (user) {
+      void ensureProfile();
+      void completeOldUnfinishedSessions(supabase);
+    }
   }, [supabase, user]);
 
   if (isLoading || !user) {

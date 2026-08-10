@@ -117,7 +117,7 @@ export type Database = {
           started_at: string;
           completed_at: string | null;
           duration_seconds: number;
-          status: "started" | "completed" | "abandoned";
+          status: "started" | "paused" | "completed" | "abandoned";
           created_at: string;
         };
         Insert: {
@@ -127,13 +127,13 @@ export type Database = {
           started_at?: string;
           completed_at?: string | null;
           duration_seconds?: number;
-          status?: "started" | "completed" | "abandoned";
+          status?: "started" | "paused" | "completed" | "abandoned";
           created_at?: string;
         };
         Update: {
           completed_at?: string | null;
           duration_seconds?: number;
-          status?: "started" | "completed" | "abandoned";
+          status?: "started" | "paused" | "completed" | "abandoned";
         };
         Relationships: [];
       };

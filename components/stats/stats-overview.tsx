@@ -35,7 +35,7 @@ export function StatsOverview() {
       supabase
         .from("workout_sessions")
         .select("id, started_at, duration_seconds")
-        .neq("status", "started"),
+        .in("status", ["completed", "abandoned"]),
       supabase
         .from("workout_session_exercises")
         .select("workout_session_id")
