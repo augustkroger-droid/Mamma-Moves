@@ -126,12 +126,12 @@ export function WorkoutTemplateDetail() {
 
     const { error } = await supabase
       .from("workout_template_archives")
-      .upsert({
+      .insert({
         user_id: userData.user.id,
         workout_template_id: template.id
-      });
+      }, { defaultToNull: false });
 
-    if (error) {
+    if (error && error.code !== "23505") {
       setErrorMessage(error.message);
       setIsArchiving(false);
       return;

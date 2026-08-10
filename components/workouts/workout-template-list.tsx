@@ -139,12 +139,12 @@ export function WorkoutTemplateList() {
 
     const { error } = await supabase
       .from("workout_template_archives")
-      .upsert({
+      .insert({
         user_id: userData.user.id,
         workout_template_id: templateId
-      });
+      }, { defaultToNull: false });
 
-    if (error) {
+    if (error && error.code !== "23505") {
       setErrorMessage(error.message);
     } else {
       setTemplates((current) => current.filter((template) => template.id !== templateId));
