@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
-import { Check, Loader2, PlusCircle, Shuffle } from "lucide-react";
+import { Check, Loader2, PlusCircle, Search, Shuffle } from "lucide-react";
 import { createBrowserSupabaseClient } from "@/lib/supabase/client";
 import { saveActiveWorkout } from "@/lib/workouts/active-workout";
 import type { Database } from "@/types/database";
@@ -24,6 +24,8 @@ export function ExerciseLibrary() {
   const [exercises, setExercises] = useState<Exercise[]>([]);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [generatedWorkout, setGeneratedWorkout] = useState<Exercise[]>([]);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [selectedCategory, setSelectedCategory] = useState("Alla");
   const [isLoading, setIsLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
@@ -79,6 +81,17 @@ export function ExerciseLibrary() {
     router.push("/workout");
   }
 
+  const categories = ["Alla", ...new Set(exercises.map((exercise) => exercise.category).filter(Boolean))] as string[];
+  const visibleExercises = exercises.filter((exercise) => {
+    const matchesCategory = selectedCategory === "Alla" || exercise.category === selectedCategory;
+    const query = searchQuery.trim().toLowerCase();
+    const matchesSearch = !query || [exercise.name, exercise.description, exercise.category]
+      .filter(Boolean)
+      .some((value) => value?.toLowerCase().includes(query));
+
+    return matchesCategory && matchesSearch;
+  });
+
   if (isLoading) {
     return (
       <section className="empty-state card" aria-live="polite">
@@ -108,8 +121,34 @@ export function ExerciseLibrary() {
 
   return (
     <>
+      <section className="exercise-tools">
+        <label className="search-field">
+          <Search aria-hidden="true" size={19} />
+          <span>Sök övning</span>
+          <input
+            type="search"
+            value={searchQuery}
+            onChange={(event) => setSearchQuery(event.target.value)}
+            placeholder="Sök övning"
+          />
+        </label>
+
+        <div className="filter-chips" aria-label="Kategorier">
+          {categories.map((category) => (
+            <button
+              key={category}
+              type="button"
+              aria-pressed={selectedCategory === category}
+              onClick={() => setSelectedCategory(category)}
+            >
+              {category}
+            </button>
+          ))}
+        </div>
+      </section>
+
       <section className="screen-stack" aria-label="Övningslista">
-        {exercises.map((exercise) => {
+        {visibleExercises.map((exercise) => {
           const isSelected = selectedIds.has(exercise.id);
           const thumbnailUrl = exercise.thumbnail_url || youtubeThumbnail(exercise.youtube_video_id);
 
@@ -130,6 +169,13 @@ export function ExerciseLibrary() {
         })}
       </section>
 
+      {visibleExercises.length === 0 ? (
+        <section className="empty-state card">
+          <h2 className="section-title">Inga träffar</h2>
+          <p className="muted">Testa en annan sökning eller kategori.</p>
+        </section>
+      ) : null}
+
       {selectedIds.size > 0 ? (
         <section className="floating-action surface" aria-live="polite">
           <p>
@@ -137,7 +183,7 @@ export function ExerciseLibrary() {
           </p>
           <button className="button" type="button" onClick={createWorkout}>
             <Shuffle aria-hidden="true" size={20} />
-            Skapa pass
+            {generatedWorkout.length > 0 ? "Slumpa om" : "Skapa pass"}
           </button>
         </section>
       ) : null}

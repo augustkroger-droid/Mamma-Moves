@@ -361,6 +361,72 @@ a {
   overflow: hidden;
 }
 
+.exercise-tools {
+  display: grid;
+  gap: 12px;
+}
+
+.search-field {
+  position: relative;
+  display: grid;
+}
+
+.search-field span {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+}
+
+.search-field svg {
+  position: absolute;
+  top: 50%;
+  left: 14px;
+  color: var(--color-muted);
+  transform: translateY(-50%);
+}
+
+.search-field input {
+  width: 100%;
+  min-height: 50px;
+  border: 1px solid var(--color-border);
+  border-radius: 999px;
+  padding: 0 16px 0 44px;
+  color: var(--color-text);
+  background: var(--color-surface);
+}
+
+.search-field input:focus {
+  border-color: var(--color-primary);
+  outline: 3px solid var(--color-primary-soft);
+}
+
+.filter-chips {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  padding-bottom: 2px;
+}
+
+.filter-chips button {
+  min-height: 40px;
+  flex: 0 0 auto;
+  border: 1px solid var(--color-border);
+  border-radius: 999px;
+  padding: 0 14px;
+  color: var(--color-muted);
+  background: var(--color-surface);
+  font-weight: 850;
+  cursor: pointer;
+}
+
+.filter-chips button[aria-pressed="true"] {
+  border-color: var(--color-primary);
+  color: var(--color-primary);
+  background: var(--color-primary-soft);
+}
+
 .exercise-card button,
 .template-card button {
   display: grid;
@@ -578,6 +644,22 @@ a {
   line-height: 1.2;
 }
 
+.calendar-header > div {
+  display: grid;
+  justify-items: center;
+  gap: 4px;
+}
+
+.calendar-header > div button {
+  min-height: 28px;
+  border: 0;
+  color: var(--color-primary);
+  background: transparent;
+  font-size: 0.82rem;
+  font-weight: 900;
+  cursor: pointer;
+}
+
 .calendar-grid {
   display: grid;
   grid-template-columns: repeat(7, minmax(0, 1fr));
@@ -693,6 +775,64 @@ a {
 .stat-card p:last-child {
   margin-top: 8px;
   font-size: 2rem;
+  font-weight: 900;
+}
+
+.stats-chart-card,
+.recent-sessions-card {
+  display: grid;
+  gap: 14px;
+  padding: 18px;
+}
+
+.stats-chart-card p,
+.recent-sessions-card p {
+  margin: 8px 0 0;
+}
+
+.week-chart {
+  display: grid;
+  height: 150px;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 10px;
+  align-items: end;
+}
+
+.week-bar {
+  display: grid;
+  height: 100%;
+  grid-template-rows: 1fr auto;
+  gap: 8px;
+  align-items: end;
+  text-align: center;
+}
+
+.week-bar span {
+  display: block;
+  width: 100%;
+  min-height: 8px;
+  border-radius: 999px 999px 8px 8px;
+  background: var(--color-primary);
+}
+
+.week-bar small {
+  color: var(--color-muted);
+  font-size: 0.72rem;
+  font-weight: 800;
+}
+
+.recent-session-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  border-radius: var(--radius-sm);
+  padding: 12px;
+  background: var(--color-surface-soft);
+}
+
+.recent-session-row span {
+  color: var(--color-primary);
   font-weight: 900;
 }
 

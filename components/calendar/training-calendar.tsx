@@ -56,6 +56,14 @@ function formatMonthLabel(date: Date) {
   return label.charAt(0).toUpperCase() + label.slice(1);
 }
 
+function formatDayLabel(dateKey: string) {
+  return new Date(`${dateKey}T12:00:00`).toLocaleDateString("sv-SE", {
+    weekday: "long",
+    day: "numeric",
+    month: "long"
+  });
+}
+
 export function TrainingCalendar() {
   const supabase = useMemo(() => createBrowserSupabaseClient(), []);
   const [sessions, setSessions] = useState<TrainingSession[]>([]);
@@ -144,6 +152,12 @@ export function TrainingCalendar() {
     });
   }
 
+  function goToToday() {
+    const today = new Date();
+    setViewedMonth(new Date(today.getFullYear(), today.getMonth(), 1));
+    setSelectedDay(localDateKey(today));
+  }
+
   const year = viewedMonth.getFullYear();
   const month = viewedMonth.getMonth();
   const daysInMonth = new Date(year, month + 1, 0).getDate();
@@ -190,7 +204,10 @@ export function TrainingCalendar() {
           <button type="button" className="icon-button" onClick={() => changeMonth(-1)} title="Föregående månad">
             <ChevronLeft aria-hidden="true" size={20} />
           </button>
-          <h2>{formatMonthLabel(viewedMonth)}</h2>
+          <div>
+            <h2>{formatMonthLabel(viewedMonth)}</h2>
+            <button type="button" onClick={goToToday}>Idag</button>
+          </div>
           <button type="button" className="icon-button" onClick={() => changeMonth(1)} title="Nästa månad">
             <ChevronRight aria-hidden="true" size={20} />
           </button>
@@ -230,7 +247,7 @@ export function TrainingCalendar() {
       </section>
 
       <section className="card day-details">
-        <h2 className="section-title">{selectedDay}</h2>
+        <h2 className="section-title">{formatDayLabel(selectedDay)}</h2>
         {selectedSessions.length === 0 && !selectedIsPaused ? (
           <p className="muted">Ingen träning sparad den här dagen.</p>
         ) : (

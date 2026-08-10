@@ -37,6 +37,7 @@ export type Database = {
           thumbnail_url: string | null;
           category: string | null;
           active: boolean;
+          created_by: string | null;
           created_at: string;
           updated_at: string;
         };
@@ -48,6 +49,7 @@ export type Database = {
           thumbnail_url?: string | null;
           category?: string | null;
           active?: boolean;
+          created_by?: string | null;
           created_at?: string;
           updated_at?: string;
         };
@@ -58,6 +60,7 @@ export type Database = {
           thumbnail_url?: string | null;
           category?: string | null;
           active?: boolean;
+          created_by?: string | null;
           updated_at?: string;
         };
         Relationships: [];
@@ -70,6 +73,7 @@ export type Database = {
           thumbnail_url: string | null;
           category: string | null;
           active: boolean;
+          created_by: string | null;
           created_at: string;
           updated_at: string;
         };
@@ -80,6 +84,7 @@ export type Database = {
           thumbnail_url?: string | null;
           category?: string | null;
           active?: boolean;
+          created_by?: string | null;
           created_at?: string;
           updated_at?: string;
         };
@@ -89,6 +94,7 @@ export type Database = {
           thumbnail_url?: string | null;
           category?: string | null;
           active?: boolean;
+          created_by?: string | null;
           updated_at?: string;
         };
         Relationships: [];

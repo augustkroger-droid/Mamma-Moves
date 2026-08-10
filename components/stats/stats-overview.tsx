@@ -20,6 +20,30 @@ type CompletedExercise = {
   workout_session_id: string;
 };
 
+function startOfWeek(date: Date) {
+  const copy = new Date(date);
+  const weekday = (copy.getDay() + 6) % 7;
+  copy.setDate(copy.getDate() - weekday);
+  copy.setHours(0, 0, 0, 0);
+
+  return copy;
+}
+
+function addDays(date: Date, amount: number) {
+  const copy = new Date(date);
+  copy.setDate(copy.getDate() + amount);
+
+  return copy;
+}
+
+function formatWeekLabel(date: Date) {
+  return `${date.getDate()}/${date.getMonth() + 1}`;
+}
+
+function formatMinutes(seconds: number) {
+  return `${Math.max(1, Math.round(seconds / 60))} min`;
+}
+
 export function StatsOverview() {
   const supabase = useMemo(() => createBrowserSupabaseClient(), []);
   const [sessions, setSessions] = useState<TrainingSession[]>([]);
@@ -127,6 +151,26 @@ export function StatsOverview() {
   const streakSummary = summarizeStreak(trainedDays, pauses);
   const totalSeconds = sessions.reduce((sum, session) => sum + session.duration_seconds, 0);
   const totalMinutes = Math.round(totalSeconds / 60);
+  const currentWeekStart = startOfWeek(new Date());
+  const weeklyBuckets = Array.from({ length: 6 }, (_, index) => {
+    const weekStart = addDays(currentWeekStart, (index - 5) * 7);
+    const weekEnd = addDays(weekStart, 7);
+    const seconds = sessions
+      .filter((session) => {
+        const startedAt = new Date(session.started_at);
+        return startedAt >= weekStart && startedAt < weekEnd;
+      })
+      .reduce((sum, session) => sum + session.duration_seconds, 0);
+
+    return {
+      label: formatWeekLabel(weekStart),
+      minutes: Math.round(seconds / 60)
+    };
+  });
+  const maxWeeklyMinutes = Math.max(1, ...weeklyBuckets.map((bucket) => bucket.minutes));
+  const recentSessions = [...sessions]
+    .sort((first, second) => new Date(second.started_at).getTime() - new Date(first.started_at).getTime())
+    .slice(0, 4);
   const stats = [
     { label: "Pass", value: sessions.length.toString() },
     { label: "Minuter", value: totalMinutes.toString() },
@@ -145,6 +189,37 @@ export function StatsOverview() {
             <p>{stat.value}</p>
           </article>
         ))}
+      </section>
+
+      <section className="card stats-chart-card">
+        <div>
+          <h2 className="section-title">Senaste veckorna</h2>
+          <p className="muted">Aktiva minuter per vecka.</p>
+        </div>
+        <div className="week-chart" aria-label="Träning per vecka">
+          {weeklyBuckets.map((bucket) => (
+            <div key={bucket.label} className="week-bar">
+              <span style={{ height: `${Math.max(8, (bucket.minutes / maxWeeklyMinutes) * 100)}%` }} />
+              <small>{bucket.label}</small>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      <section className="card recent-sessions-card">
+        <h2 className="section-title">Senaste pass</h2>
+        {recentSessions.length === 0 ? (
+          <p className="muted">Inga pass sparade än.</p>
+        ) : (
+          <div className="screen-stack">
+            {recentSessions.map((session) => (
+              <article key={session.id} className="recent-session-row">
+                <strong>{new Date(session.started_at).toLocaleDateString("sv-SE", { day: "numeric", month: "short" })}</strong>
+                <span>{formatMinutes(session.duration_seconds)}</span>
+              </article>
+            ))}
+          </div>
+        )}
       </section>
 
       <section className="card pause-card">
