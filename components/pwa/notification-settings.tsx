@@ -95,6 +95,8 @@ export function NotificationSettings() {
 
       if (!response.ok) {
         const result = await response.json().catch(() => null) as { error?: string } | null;
+        await subscription.unsubscribe();
+        setIsSubscribed(false);
         throw new Error(result?.error ?? "Kunde inte spara notisinställningen.");
       }
 
