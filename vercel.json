@@ -4,6 +4,10 @@
     {
       "path": "/api/cron/supabase-keepalive",
       "schedule": "0 8 * * *"
+    },
+    {
+      "path": "/api/cron/daily-streak-reminders",
+      "schedule": "0 13 * * *"
     }
   ]
 }

@@ -1,4 +1,4 @@
-const CACHE_NAME = "mamma-moves-v2";
+const CACHE_NAME = "mamma-moves-v3";
 const APP_SHELL = [
   "/",
   "/login",
@@ -72,6 +72,49 @@ self.addEventListener("fetch", (event) => {
       });
 
       return cachedResponse || fetchPromise;
+    })
+  );
+});
+
+self.addEventListener("push", (event) => {
+  const fallbackPayload = {
+    title: "Håll din streak levande",
+    body: "Ett kort pass räcker för idag.",
+    url: "/workouts",
+    icon: "/icons/icon-192.png",
+    badge: "/icons/icon-192.png",
+    tag: "daily-streak"
+  };
+  const payload = event.data ? event.data.json() : fallbackPayload;
+
+  event.waitUntil(
+    self.registration.showNotification(payload.title || fallbackPayload.title, {
+      body: payload.body || fallbackPayload.body,
+      icon: payload.icon || fallbackPayload.icon,
+      badge: payload.badge || fallbackPayload.badge,
+      tag: payload.tag || fallbackPayload.tag,
+      data: {
+        url: payload.url || fallbackPayload.url
+      }
+    })
+  );
+});
+
+self.addEventListener("notificationclick", (event) => {
+  event.notification.close();
+  const url = event.notification.data?.url || "/workouts";
+
+  event.waitUntil(
+    self.clients.matchAll({ type: "window", includeUncontrolled: true }).then((clients) => {
+      for (const client of clients) {
+        if ("focus" in client) {
+          client.focus();
+          client.navigate(url);
+          return;
+        }
+      }
+
+      return self.clients.openWindow(url);
     })
   );
 });

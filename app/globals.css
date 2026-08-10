@@ -1200,7 +1200,18 @@ a {
   padding: 18px;
 }
 
+.notification-card {
+  display: grid;
+  gap: 14px;
+  padding: 18px;
+}
+
 .pause-card p {
+  margin: 8px 0 0;
+  line-height: 1.45;
+}
+
+.notification-card p {
   margin: 8px 0 0;
   line-height: 1.45;
 }

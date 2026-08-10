@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Loader2, PauseCircle } from "lucide-react";
+import { NotificationSettings } from "@/components/pwa/notification-settings";
 import { createBrowserSupabaseClient } from "@/lib/supabase/client";
 import { localDateKey } from "@/lib/dates/local-date";
 import {
@@ -288,6 +289,8 @@ export function StatsOverview() {
           Pausa idag
         </button>
       </section>
+
+      <NotificationSettings />
     </>
   );
 }
