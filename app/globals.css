@@ -1258,11 +1258,16 @@ a {
 }
 
 .video-frame iframe,
+.video-frame video,
 .video-frame .video-placeholder {
   position: absolute;
   inset: 0;
   width: 100%;
   height: 100%;
+}
+
+.video-frame video {
+  object-fit: cover;
 }
 
 .video-placeholder {

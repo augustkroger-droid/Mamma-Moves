@@ -17,6 +17,8 @@ type CompletedExercise = {
   workout_session_id: string;
 };
 
+const introVideoUrl = process.env.NEXT_PUBLIC_INTRO_VIDEO_URL;
+
 export function IntroContent() {
   const router = useRouter();
   const supabase = useMemo(() => createBrowserSupabaseClient(), []);
@@ -122,12 +124,19 @@ export function IntroContent() {
 
       <section className="surface" style={{ padding: 16 }} aria-label="Introduktionsvideo">
         <div className="video-frame">
-          <div className="video-placeholder">
-            <div>
-              <Play aria-hidden="true" size={38} />
-              <p style={{ margin: "10px 0 0", fontWeight: 800 }}>Mamma Moves</p>
+          {introVideoUrl ? (
+            <video controls playsInline preload="metadata">
+              <source src={introVideoUrl} type="video/mp4" />
+              Din webbläsare kan inte spela upp videon.
+            </video>
+          ) : (
+            <div className="video-placeholder">
+              <div>
+                <Play aria-hidden="true" size={38} />
+                <p style={{ margin: "10px 0 0", fontWeight: 800 }}>Mamma Moves</p>
+              </div>
             </div>
-          </div>
+          )}
         </div>
       </section>
 
