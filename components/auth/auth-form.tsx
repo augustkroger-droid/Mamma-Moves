@@ -39,33 +39,30 @@ export function AuthForm() {
     setMessage(null);
 
     if (mode === "signup") {
-      const { data, error } = await supabase.auth.signUp({
-        email,
-        password,
-        options: {
-          data: {
-            username
-          }
-        }
+      const signupResponse = await fetch("/api/auth/signup", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({ email, password, username })
       });
+      const signupResult = await signupResponse.json().catch(() => null) as { error?: string } | null;
 
-      if (error) {
-        setMessage(error.message);
+      if (!signupResponse.ok) {
+        setMessage(signupResult?.error ?? "Kunde inte skapa kontot.");
         setIsLoading(false);
         return;
       }
 
-      if (!data.session) {
-        const { error: signInError } = await supabase.auth.signInWithPassword({
-          email,
-          password
-        });
+      const { error: signInError } = await supabase.auth.signInWithPassword({
+        email,
+        password
+      });
 
-        if (signInError) {
-          setMessage("Kontot skapades, men behöver aktiveras innan du kan logga in.");
-          setIsLoading(false);
-          return;
-        }
+      if (signInError) {
+        setMessage(signInError.message);
+        setIsLoading(false);
+        return;
       }
 
       const targetHref = await getPostLoginHref();
