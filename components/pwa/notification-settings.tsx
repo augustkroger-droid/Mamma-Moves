@@ -106,7 +106,7 @@ export function NotificationSettings() {
 
         await saveSubscriptionForTime(subscription, defaultReminderTime);
         setIsSubscribed(true);
-        setMessage("Påminnelser är aktiva igen på den här enheten.");
+        setMessage("Påminnelser är aktiva på den här enheten.");
       } catch (error) {
         setIsSubscribed(false);
         setMessage(error instanceof Error ? error.message : "Kunde inte kontrollera notisinställningen.");
