@@ -211,7 +211,7 @@ export function WorkoutPlayer() {
     const { data: exercises, error: exercisesError } = exerciseIds.length > 0
       ? await supabase
           .from("exercises")
-          .select("id, name, description, youtube_video_id, thumbnail_url, category")
+          .select("id, name, description, youtube_video_id, thumbnail_url, category, categories")
           .in("id", exerciseIds)
       : { data: [], error: null };
 

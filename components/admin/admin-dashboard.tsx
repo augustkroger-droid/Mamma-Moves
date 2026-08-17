@@ -14,6 +14,12 @@ import {
   X
 } from "lucide-react";
 import { isAdminEmail } from "@/lib/admin/is-admin";
+import {
+  collectExerciseCategoryOptions,
+  exerciseCategories,
+  formatExerciseCategories,
+  normalizeCategoryName
+} from "@/lib/exercises/categories";
 import { createBrowserSupabaseClient } from "@/lib/supabase/client";
 import type { Database } from "@/types/database";
 
@@ -29,7 +35,8 @@ type ExerciseForm = {
   description: string;
   youtubeInput: string;
   thumbnailUrl: string;
-  category: string;
+  categories: string[];
+  newCategory: string;
   active: boolean;
 };
 
@@ -49,7 +56,8 @@ const emptyExerciseForm: ExerciseForm = {
   description: "",
   youtubeInput: "",
   thumbnailUrl: "",
-  category: "",
+  categories: [],
+  newCategory: "",
   active: true
 };
 
@@ -111,6 +119,19 @@ function templateVisibilityLabel(template: WorkoutTemplate) {
   }
 
   return template.visibility === "selected" ? "Valda användare" : "Alla användare";
+}
+
+function mergeCategories(categories: string[], newCategory: string) {
+  const normalizedCategories = categories.map(normalizeCategoryName).filter(Boolean);
+  const normalizedNewCategory = normalizeCategoryName(newCategory);
+
+  return [
+    ...new Set(
+      normalizedNewCategory
+        ? [...normalizedCategories, normalizedNewCategory]
+        : normalizedCategories
+    )
+  ];
 }
 
 export function AdminDashboard() {
@@ -185,7 +206,8 @@ export function AdminDashboard() {
       description: exercise.description ?? "",
       youtubeInput: exercise.youtube_video_id,
       thumbnailUrl: exercise.thumbnail_url ?? "",
-      category: exercise.category ?? "",
+      categories: exerciseCategories(exercise),
+      newCategory: "",
       active: exercise.active
     });
     setActiveTab("exercises");
@@ -208,12 +230,14 @@ export function AdminDashboard() {
     setIsSaving(true);
     setMessage(null);
 
+    const categories = mergeCategories(exerciseForm.categories, exerciseForm.newCategory);
     const payload = {
       name: exerciseForm.name,
       description: exerciseForm.description || null,
       youtube_video_id: youtubeVideoId,
       thumbnail_url: exerciseForm.thumbnailUrl || null,
-      category: exerciseForm.category || null,
+      category: categories[0] ?? null,
+      categories,
       active: exerciseForm.active,
       updated_at: new Date().toISOString()
     };
@@ -310,6 +334,15 @@ export function AdminDashboard() {
       userIds: current.userIds.includes(userIdToToggle)
         ? current.userIds.filter((id) => id !== userIdToToggle)
         : [...current.userIds, userIdToToggle]
+    }));
+  }
+
+  function toggleExerciseCategory(category: string) {
+    setExerciseForm((current) => ({
+      ...current,
+      categories: current.categories.includes(category)
+        ? current.categories.filter((item) => item !== category)
+        : [...current.categories, category]
     }));
   }
 
@@ -491,6 +524,7 @@ export function AdminDashboard() {
     .map((exerciseId) => exercises.find((exercise) => exercise.id === exerciseId))
     .filter((exercise): exercise is Exercise => Boolean(exercise));
   const availableWorkoutExercises = exercises.filter((exercise) => exercise.active);
+  const exerciseCategoryOptions = collectExerciseCategoryOptions(exercises);
 
   if (isLoading) {
     return (
@@ -542,10 +576,37 @@ export function AdminDashboard() {
               <span>YouTube-länk eller video-ID</span>
               <input value={exerciseForm.youtubeInput} onChange={(event) => setExerciseForm((current) => ({ ...current, youtubeInput: event.target.value }))} required />
             </label>
-            <label className="form-field">
-              <span>Kategori</span>
-              <input value={exerciseForm.category} onChange={(event) => setExerciseForm((current) => ({ ...current, category: event.target.value }))} />
-            </label>
+            <div className="form-field">
+              <span>Kategorier</span>
+              <details className="category-picker">
+                <summary>
+                  {exerciseForm.categories.length > 0
+                    ? exerciseForm.categories.join(", ")
+                    : "Välj kategorier"}
+                </summary>
+                <div className="category-picker__menu">
+                  {exerciseCategoryOptions.length === 0 ? (
+                    <p className="muted">Inga kategorier ännu.</p>
+                  ) : (
+                    exerciseCategoryOptions.map((category) => (
+                      <label key={category} className="check-row">
+                        <input
+                          type="checkbox"
+                          checked={exerciseForm.categories.includes(category)}
+                          onChange={() => toggleExerciseCategory(category)}
+                        />
+                        <span>{category}</span>
+                      </label>
+                    ))
+                  )}
+                </div>
+              </details>
+              <input
+                value={exerciseForm.newCategory}
+                onChange={(event) => setExerciseForm((current) => ({ ...current, newCategory: event.target.value }))}
+                placeholder="Lägg till ny kategori"
+              />
+            </div>
             <label className="form-field">
               <span>Beskrivning</span>
               <textarea value={exerciseForm.description} onChange={(event) => setExerciseForm((current) => ({ ...current, description: event.target.value }))} rows={3} />
@@ -579,7 +640,7 @@ export function AdminDashboard() {
                   <Image src={exercise.thumbnail_url || youtubeThumbnail(exercise.youtube_video_id)} alt="" width={192} height={120} unoptimized />
                   <span>
                     <strong>{exercise.name}</strong>
-                    <small>{exercise.category || "Övning"} · {exercise.active ? "Aktiv" : "Inaktiv"}</small>
+                    <small>{formatExerciseCategories(exercise)} · {exercise.active ? "Aktiv" : "Inaktiv"}</small>
                   </span>
                 </div>
                 <div className="template-card__actions">
@@ -641,7 +702,7 @@ export function AdminDashboard() {
                     <Image src={exercise.thumbnail_url || youtubeThumbnail(exercise.youtube_video_id)} alt="" width={128} height={80} unoptimized />
                     <span>
                       <strong>{exercise.name}</strong>
-                      <small>{exercise.category || "Övning"}</small>
+                      <small>{formatExerciseCategories(exercise)}</small>
                     </span>
                     <div className="row-actions">
                       <button type="button" onClick={() => moveWorkoutExercise(index, -1)} disabled={index === 0} title="Flytta upp">
@@ -681,7 +742,7 @@ export function AdminDashboard() {
                   <Plus aria-hidden="true" size={18} />
                   <span>
                     <strong>{exercise.name}</strong>
-                    <small>{exercise.category || "Övning"}</small>
+                    <small>{formatExerciseCategories(exercise)}</small>
                   </span>
                 </button>
               ))}

@@ -4,6 +4,11 @@ import { useEffect, useMemo, useState } from "react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { Check, Loader2, PlusCircle, Search, Shuffle } from "lucide-react";
+import {
+  collectExerciseCategoryOptions,
+  exerciseCategories,
+  formatExerciseCategories
+} from "@/lib/exercises/categories";
 import { createBrowserSupabaseClient } from "@/lib/supabase/client";
 import { saveActiveWorkout } from "@/lib/workouts/active-workout";
 import type { Database } from "@/types/database";
@@ -81,11 +86,12 @@ export function ExerciseLibrary() {
     router.push("/workout");
   }
 
-  const categories = ["Alla", ...new Set(exercises.map((exercise) => exercise.category).filter(Boolean))] as string[];
+  const categories = ["Alla", ...collectExerciseCategoryOptions(exercises)];
   const visibleExercises = exercises.filter((exercise) => {
-    const matchesCategory = selectedCategory === "Alla" || exercise.category === selectedCategory;
+    const exerciseCategoryNames = exerciseCategories(exercise);
+    const matchesCategory = selectedCategory === "Alla" || exerciseCategoryNames.includes(selectedCategory);
     const query = searchQuery.trim().toLowerCase();
-    const matchesSearch = !query || [exercise.name, exercise.description, exercise.category]
+    const matchesSearch = !query || [exercise.name, exercise.description, ...exerciseCategoryNames]
       .filter(Boolean)
       .some((value) => value?.toLowerCase().includes(query));
 
@@ -158,7 +164,7 @@ export function ExerciseLibrary() {
                 <Image src={thumbnailUrl} alt="" width={192} height={120} unoptimized />
                 <span>
                   <strong>{exercise.name}</strong>
-                  <small>{exercise.category || "Övning"}</small>
+                  <small>{formatExerciseCategories(exercise)}</small>
                 </span>
                 <span className="select-indicator" aria-hidden="true">
                   {isSelected ? <Check size={20} /> : <PlusCircle size={20} />}

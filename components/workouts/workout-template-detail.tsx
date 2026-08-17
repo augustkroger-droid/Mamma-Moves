@@ -5,6 +5,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { useParams, useRouter } from "next/navigation";
 import { Archive, ArrowLeft, ArrowDown, ArrowUp, Loader2, Plus, Play, X } from "lucide-react";
+import { formatExerciseCategories } from "@/lib/exercises/categories";
 import { createBrowserSupabaseClient } from "@/lib/supabase/client";
 import { saveActiveWorkout, type WorkoutExercise } from "@/lib/workouts/active-workout";
 import type { Database } from "@/types/database";
@@ -204,7 +205,7 @@ export function WorkoutTemplateDetail() {
                 />
                 <span>
                   <strong>{exercise.name}</strong>
-                  <small>{exercise.category || "Övning"}</small>
+                  <small>{formatExerciseCategories(exercise)}</small>
                 </span>
                 <div className="row-actions">
                   <button type="button" onClick={() => moveExercise(index, -1)} disabled={index === 0} title="Flytta upp">
@@ -238,7 +239,7 @@ export function WorkoutTemplateDetail() {
                 <Plus aria-hidden="true" size={18} />
                 <span>
                   <strong>{exercise.name}</strong>
-                  <small>{exercise.category || "Övning"}</small>
+                  <small>{formatExerciseCategories(exercise)}</small>
                 </span>
               </button>
             ))}

@@ -39,6 +39,7 @@ export type Database = {
           youtube_video_id: string;
           thumbnail_url: string | null;
           category: string | null;
+          categories: string[];
           active: boolean;
           created_by: string | null;
           created_at: string;
@@ -51,6 +52,7 @@ export type Database = {
           youtube_video_id: string;
           thumbnail_url?: string | null;
           category?: string | null;
+          categories?: string[];
           active?: boolean;
           created_by?: string | null;
           created_at?: string;
@@ -62,6 +64,7 @@ export type Database = {
           youtube_video_id?: string;
           thumbnail_url?: string | null;
           category?: string | null;
+          categories?: string[];
           active?: boolean;
           created_by?: string | null;
           updated_at?: string;

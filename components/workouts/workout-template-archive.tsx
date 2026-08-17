@@ -86,7 +86,7 @@ export function WorkoutTemplateArchive() {
       const exerciseResult = exerciseIds.length > 0
         ? await supabase
             .from("exercises")
-            .select("id, name, description, youtube_video_id, thumbnail_url, category, active, created_by, created_at, updated_at")
+            .select("id, name, description, youtube_video_id, thumbnail_url, category, categories, active, created_by, created_at, updated_at")
             .in("id", exerciseIds)
         : { data: [], error: null };
 

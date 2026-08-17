@@ -676,6 +676,30 @@ a {
   background: var(--color-surface-soft);
 }
 
+.category-picker {
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  background: var(--color-surface);
+}
+
+.category-picker summary {
+  min-height: 50px;
+  padding: 14px;
+  color: var(--color-text);
+  cursor: pointer;
+  font-weight: 850;
+}
+
+.category-picker__menu {
+  display: grid;
+  max-height: 230px;
+  gap: 6px;
+  overflow: auto;
+  border-top: 1px solid var(--color-border);
+  padding: 10px;
+  background: var(--color-surface-soft);
+}
+
 .admin-list {
   display: grid;
   gap: 8px;
