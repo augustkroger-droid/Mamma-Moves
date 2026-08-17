@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { Bell, BellOff, Loader2, Save, Send } from "lucide-react";
+import { Bell, BellOff, Loader2, Save } from "lucide-react";
 import { createBrowserSupabaseClient } from "@/lib/supabase/client";
 
 function urlBase64ToUint8Array(base64String: string) {
@@ -184,43 +184,6 @@ export function NotificationSettings() {
     setIsSaving(false);
   }
 
-  async function sendTestNotification() {
-    setIsSaving(true);
-    setMessage(null);
-
-    try {
-      const token = await getAccessToken();
-
-      if (!token) {
-        throw new Error("Logga in igen för att skicka en testnotis.");
-      }
-
-      const response = await fetch("/api/push/test", {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${token}`
-        }
-      });
-      const result = await response.json().catch(() => null) as { sent?: number; failed?: number; error?: string } | null;
-
-      if (!response.ok) {
-        throw new Error(result?.error ?? "Kunde inte skicka testnotisen.");
-      }
-
-      if ((result?.sent ?? 0) > 0) {
-        setMessage("Testnotis skickad. Om den inte syns, kontrollera att notiser är tillåtna för appen i mobilen.");
-      } else if ((result?.failed ?? 0) > 0) {
-        setMessage("Testnotisen kunde inte levereras. Stäng av påminnelser och slå på dem igen på den här enheten.");
-      } else {
-        setMessage("Ingen aktiv notisprenumeration hittades för den här användaren.");
-      }
-    } catch (error) {
-      setMessage(error instanceof Error ? error.message : "Kunde inte skicka testnotisen.");
-    }
-
-    setIsSaving(false);
-  }
-
   async function disableNotifications() {
     setIsSaving(true);
     setMessage(null);
@@ -298,17 +261,6 @@ export function NotificationSettings() {
           )}
           {isSubscribed ? "Spara påminnelsetid" : "Slå på påminnelser"}
         </button>
-        {isSubscribed ? (
-          <button
-            className="button secondary full"
-            type="button"
-            onClick={sendTestNotification}
-            disabled={isSaving}
-          >
-            <Send aria-hidden="true" size={20} />
-            Skicka testnotis
-          </button>
-        ) : null}
         {isSubscribed ? (
           <button
             className="button secondary full"
