@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
-import { ArrowLeft, ArrowRight, CheckCircle2, Loader2, Pause, Play, Square } from "lucide-react";
+import { ArrowLeft, ArrowRight, CheckCircle2, Loader2, Maximize2, Minimize2, Pause, Play, Square } from "lucide-react";
 import { createBrowserSupabaseClient } from "@/lib/supabase/client";
 import { localDateKey } from "@/lib/dates/local-date";
 import { summarizeStreak, type StreakPauseRange } from "@/lib/streak/streak";
@@ -114,11 +114,58 @@ export function WorkoutPlayer() {
   const [elapsedSeconds, setElapsedSeconds] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
+  const [isVideoFullscreen, setIsVideoFullscreen] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
   const [summary, setSummary] = useState<SavedSummary | null>(null);
+  const videoFrameRef = useRef<HTMLElement | null>(null);
   const sessionIdRef = useRef<string | null>(null);
   const elapsedSecondsRef = useRef(0);
   const isFinishedRef = useRef(false);
+
+  useEffect(() => {
+    function handleFullscreenChange() {
+      const documentWithWebkit = document as Document & { webkitFullscreenElement?: Element | null };
+      setIsVideoFullscreen(
+        document.fullscreenElement === videoFrameRef.current ||
+        documentWithWebkit.webkitFullscreenElement === videoFrameRef.current
+      );
+    }
+
+    document.addEventListener("fullscreenchange", handleFullscreenChange);
+    document.addEventListener("webkitfullscreenchange", handleFullscreenChange);
+
+    return () => {
+      document.removeEventListener("fullscreenchange", handleFullscreenChange);
+      document.removeEventListener("webkitfullscreenchange", handleFullscreenChange);
+    };
+  }, []);
+
+  async function toggleVideoFullscreen() {
+    const element = videoFrameRef.current as (HTMLElement & { webkitRequestFullscreen?: () => Promise<void> | void }) | null;
+    const documentWithWebkit = document as Document & {
+      webkitExitFullscreen?: () => Promise<void> | void;
+      webkitFullscreenElement?: Element | null;
+    };
+
+    if (!element) {
+      return;
+    }
+
+    if (document.fullscreenElement || documentWithWebkit.webkitFullscreenElement) {
+      if (document.exitFullscreen) {
+        await document.exitFullscreen();
+      } else {
+        await documentWithWebkit.webkitExitFullscreen?.();
+      }
+      return;
+    }
+
+    if (element.requestFullscreen) {
+      await element.requestFullscreen();
+    } else {
+      await element.webkitRequestFullscreen?.();
+    }
+  }
 
   const persistDuration = useCallback(async (status?: "started" | "paused" | "completed") => {
     const sessionId = sessionIdRef.current;
@@ -512,7 +559,11 @@ export function WorkoutPlayer() {
         </div>
       </header>
 
-      <section className="video-frame workout-video" aria-label={currentExercise.name}>
+      <section
+        ref={videoFrameRef}
+        className="video-frame workout-video"
+        aria-label={currentExercise.name}
+      >
         <iframe
           key={`${currentExercise.id}-${currentIndex}`}
           src={youtubeEmbedUrl(currentExercise.youtube_video_id)}
@@ -520,6 +571,15 @@ export function WorkoutPlayer() {
           allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share; fullscreen"
           allowFullScreen
         />
+        <button
+          className="video-fullscreen-button"
+          type="button"
+          onClick={toggleVideoFullscreen}
+          aria-label={isVideoFullscreen ? "Stäng helskärm" : "Fyll skärmen"}
+          title={isVideoFullscreen ? "Stäng helskärm" : "Fyll skärmen"}
+        >
+          {isVideoFullscreen ? <Minimize2 aria-hidden="true" size={20} /> : <Maximize2 aria-hidden="true" size={20} />}
+        </button>
       </section>
 
       <section className="workout-details">
