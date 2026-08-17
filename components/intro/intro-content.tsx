@@ -224,7 +224,7 @@ export function IntroContent() {
           <div>
             <p className="eyebrow">Bonusklipp</p>
             <h2 className="section-title">Bloopers</h2>
-            <p className="muted">Lite skratt från inspelningen, längst ner där det får vara en ren bonus.</p>
+            <p className="muted">Lite skratt från inspelningen.</p>
           </div>
           <div className="video-frame">
             <iframe

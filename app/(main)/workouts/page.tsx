@@ -6,7 +6,7 @@ export default function WorkoutsPage() {
       <header>
         <p className="eyebrow">Pass</p>
         <h1 className="page-title">Dina pass.</h1>
-        <p className="page-lead">Välj ett färdigt pass, skapa ett eget eller fortsätt där du slutade.</p>
+        <p className="page-lead">Välj ett färdigt pass eller skapa ett eget.</p>
       </header>
 
       <WorkoutTemplateList />
