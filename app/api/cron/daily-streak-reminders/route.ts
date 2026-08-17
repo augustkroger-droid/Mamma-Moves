@@ -111,9 +111,11 @@ export async function GET(request: Request) {
   }
 
   const subscriptionsByUser = new Map<string, PushSubscriptionRow[]>();
+  let skippedAlreadySent = 0;
 
   for (const subscription of (subscriptions ?? []) as PushSubscriptionRow[]) {
     if (subscription.last_daily_streak_reminder_date === today) {
+      skippedAlreadySent += 1;
       continue;
     }
 
@@ -126,7 +128,18 @@ export async function GET(request: Request) {
   const userIds = [...subscriptionsByUser.keys()];
 
   if (userIds.length === 0) {
-    return Response.json({ ok: true, sent: 0, skipped: 0 });
+    return Response.json({
+      ok: true,
+      checkedAt: new Date().toISOString(),
+      date: today,
+      hour: currentHour,
+      matchedSubscriptions: subscriptions?.length ?? 0,
+      eligibleUsers: 0,
+      sent: 0,
+      skipped: 0,
+      skippedAlreadySent,
+      failed: 0
+    });
   }
 
   const [sessionsResult, pausesResult] = await Promise.all([
@@ -179,7 +192,8 @@ export async function GET(request: Request) {
   }
 
   let sent = 0;
-  let skipped = 0;
+  let skippedTrained = 0;
+  let skippedPaused = 0;
   let failed = 0;
 
   for (const userId of userIds) {
@@ -189,8 +203,13 @@ export async function GET(request: Request) {
     const pauses = pausesByUser.get(userId) ?? [];
     const pausedDays = pauseDaysFromRanges(pauses);
 
-    if (trainedDays.has(today) || pausedDays.has(today)) {
-      skipped += 1;
+    if (trainedDays.has(today)) {
+      skippedTrained += 1;
+      continue;
+    }
+
+    if (pausedDays.has(today)) {
+      skippedPaused += 1;
       continue;
     }
 
@@ -229,8 +248,14 @@ export async function GET(request: Request) {
     ok: true,
     checkedAt: new Date().toISOString(),
     date: today,
+    hour: currentHour,
+    matchedSubscriptions: subscriptions?.length ?? 0,
+    eligibleUsers: userIds.length,
     sent,
-    skipped,
+    skipped: skippedTrained + skippedPaused,
+    skippedAlreadySent,
+    skippedTrained,
+    skippedPaused,
     failed
   });
 }

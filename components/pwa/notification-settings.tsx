@@ -1,7 +1,7 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
-import { Bell, BellOff, Loader2, Save } from "lucide-react";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { Bell, BellOff, Loader2, Save, Send } from "lucide-react";
 import { createBrowserSupabaseClient } from "@/lib/supabase/client";
 
 function urlBase64ToUint8Array(base64String: string) {
@@ -22,50 +22,22 @@ function supportsPushNotifications() {
 }
 
 const reminderTimeOptions = Array.from({ length: 24 }, (_, hour) => `${hour.toString().padStart(2, "0")}:00`);
+const defaultReminderTime = "14:00";
 
 export function NotificationSettings() {
   const supabase = useMemo(() => createBrowserSupabaseClient(), []);
   const [isSupported, setIsSupported] = useState(false);
   const [isSubscribed, setIsSubscribed] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
-  const [reminderTime, setReminderTime] = useState("14:00");
+  const [reminderTime, setReminderTime] = useState(defaultReminderTime);
   const [message, setMessage] = useState<string | null>(null);
 
-  useEffect(() => {
-    async function loadSubscription() {
-      const supported = supportsPushNotifications();
-      setIsSupported(supported);
-
-      if (!supported) {
-        return;
-      }
-
-      const registration = await navigator.serviceWorker.ready;
-      const subscription = await registration.pushManager.getSubscription();
-      setIsSubscribed(Boolean(subscription));
-
-      if (subscription) {
-        const { data } = await supabase
-          .from("push_subscriptions")
-          .select("reminder_time")
-          .eq("endpoint", subscription.endpoint)
-          .maybeSingle();
-
-        if (data?.reminder_time) {
-          setReminderTime(data.reminder_time.slice(0, 5));
-        }
-      }
-    }
-
-    void loadSubscription();
-  }, [supabase]);
-
-  async function getAccessToken() {
+  const getAccessToken = useCallback(async () => {
     const { data } = await supabase.auth.getSession();
     return data.session?.access_token ?? null;
-  }
+  }, [supabase]);
 
-  async function saveSubscription(subscription: PushSubscription) {
+  const saveSubscriptionForTime = useCallback(async (subscription: PushSubscription, time: string) => {
     const token = await getAccessToken();
 
     if (!token) {
@@ -79,14 +51,70 @@ export function NotificationSettings() {
         "Content-Type": "application/json",
         Authorization: `Bearer ${token}`
       },
-      body: JSON.stringify({ ...subscriptionJson, reminderTime })
+      body: JSON.stringify({ ...subscriptionJson, reminderTime: time })
     });
 
     if (!response.ok) {
       const result = await response.json().catch(() => null) as { error?: string } | null;
       throw new Error(result?.error ?? "Kunde inte spara notisinställningen.");
     }
-  }
+  }, [getAccessToken]);
+
+  useEffect(() => {
+    async function loadSubscription() {
+      const supported = supportsPushNotifications();
+      setIsSupported(supported);
+
+      if (!supported) {
+        return;
+      }
+
+      try {
+        const registration = await navigator.serviceWorker.ready;
+        const subscription = await registration.pushManager.getSubscription();
+
+        if (!subscription) {
+          setIsSubscribed(false);
+          return;
+        }
+
+        const token = await getAccessToken();
+
+        if (!token) {
+          setIsSubscribed(false);
+          setMessage("Logga in igen för att aktivera påminnelser på den här enheten.");
+          return;
+        }
+
+        const { data, error } = await supabase
+          .from("push_subscriptions")
+          .select("reminder_time")
+          .eq("endpoint", subscription.endpoint)
+          .maybeSingle();
+
+        if (error) {
+          setIsSubscribed(false);
+          setMessage("Kunde inte läsa notisinställningen just nu.");
+          return;
+        }
+
+        if (data?.reminder_time) {
+          setReminderTime(data.reminder_time.slice(0, 5));
+          setIsSubscribed(true);
+          return;
+        }
+
+        await saveSubscriptionForTime(subscription, defaultReminderTime);
+        setIsSubscribed(true);
+        setMessage("Påminnelser är aktiva igen på den här enheten.");
+      } catch (error) {
+        setIsSubscribed(false);
+        setMessage(error instanceof Error ? error.message : "Kunde inte kontrollera notisinställningen.");
+      }
+    }
+
+    void loadSubscription();
+  }, [getAccessToken, saveSubscriptionForTime, supabase]);
 
   async function enableNotifications() {
     const vapidPublicKey = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY;
@@ -115,7 +143,7 @@ export function NotificationSettings() {
       });
 
       try {
-        await saveSubscription(subscription);
+        await saveSubscriptionForTime(subscription, reminderTime);
       } catch (error) {
         await subscription.unsubscribe();
         setIsSubscribed(false);
@@ -146,11 +174,48 @@ export function NotificationSettings() {
         return;
       }
 
-      await saveSubscription(subscription);
+      await saveSubscriptionForTime(subscription, reminderTime);
       setIsSubscribed(true);
       setMessage(`Påminnelsetiden är sparad till ${reminderTime}.`);
     } catch (error) {
       setMessage(error instanceof Error ? error.message : "Kunde inte spara påminnelsetiden.");
+    }
+
+    setIsSaving(false);
+  }
+
+  async function sendTestNotification() {
+    setIsSaving(true);
+    setMessage(null);
+
+    try {
+      const token = await getAccessToken();
+
+      if (!token) {
+        throw new Error("Logga in igen för att skicka en testnotis.");
+      }
+
+      const response = await fetch("/api/push/test", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`
+        }
+      });
+      const result = await response.json().catch(() => null) as { sent?: number; failed?: number; error?: string } | null;
+
+      if (!response.ok) {
+        throw new Error(result?.error ?? "Kunde inte skicka testnotisen.");
+      }
+
+      if ((result?.sent ?? 0) > 0) {
+        setMessage("Testnotis skickad. Om den inte syns, kontrollera att notiser är tillåtna för appen i mobilen.");
+      } else if ((result?.failed ?? 0) > 0) {
+        setMessage("Testnotisen kunde inte levereras. Stäng av påminnelser och slå på dem igen på den här enheten.");
+      } else {
+        setMessage("Ingen aktiv notisprenumeration hittades för den här användaren.");
+      }
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : "Kunde inte skicka testnotisen.");
     }
 
     setIsSaving(false);
@@ -233,6 +298,17 @@ export function NotificationSettings() {
           )}
           {isSubscribed ? "Spara påminnelsetid" : "Slå på påminnelser"}
         </button>
+        {isSubscribed ? (
+          <button
+            className="button secondary full"
+            type="button"
+            onClick={sendTestNotification}
+            disabled={isSaving}
+          >
+            <Send aria-hidden="true" size={20} />
+            Skicka testnotis
+          </button>
+        ) : null}
         {isSubscribed ? (
           <button
             className="button secondary full"
