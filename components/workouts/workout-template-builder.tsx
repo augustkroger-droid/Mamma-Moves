@@ -15,6 +15,18 @@ function youtubeThumbnail(videoId: string) {
   return `https://img.youtube.com/vi/${videoId}/hqdefault.jpg`;
 }
 
+function exerciseImageUrl(exercise: Pick<Exercise, "thumbnail_url" | "youtube_video_id">) {
+  if (exercise.thumbnail_url) {
+    return exercise.thumbnail_url;
+  }
+
+  if (exercise.youtube_video_id) {
+    return youtubeThumbnail(exercise.youtube_video_id);
+  }
+
+  return null;
+}
+
 function moveItem<T>(items: T[], fromIndex: number, toIndex: number) {
   const next = [...items];
   const [item] = next.splice(fromIndex, 1);
@@ -157,13 +169,11 @@ export function WorkoutTemplateBuilder() {
           <div className="editable-exercise-list">
             {selectedExercises.map((exercise, index) => (
               <article key={exercise.id} className="editable-exercise-row">
-                <Image
-                  src={exercise.thumbnail_url || youtubeThumbnail(exercise.youtube_video_id)}
-                  alt=""
-                  width={128}
-                  height={80}
-                  unoptimized
-                />
+                {exerciseImageUrl(exercise) ? (
+                  <Image src={exerciseImageUrl(exercise) ?? ""} alt="" width={128} height={80} unoptimized />
+                ) : (
+                  <span className="template-fallback" aria-hidden="true" />
+                )}
                 <span>
                   <strong>{exercise.name}</strong>
                   <small>{formatExerciseCategories(exercise)}</small>

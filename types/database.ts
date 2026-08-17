@@ -36,7 +36,7 @@ export type Database = {
           id: string;
           name: string;
           description: string | null;
-          youtube_video_id: string;
+          youtube_video_id: string | null;
           thumbnail_url: string | null;
           category: string | null;
           categories: string[];
@@ -49,7 +49,7 @@ export type Database = {
           id?: string;
           name: string;
           description?: string | null;
-          youtube_video_id: string;
+          youtube_video_id?: string | null;
           thumbnail_url?: string | null;
           category?: string | null;
           categories?: string[];
@@ -61,7 +61,7 @@ export type Database = {
         Update: {
           name?: string;
           description?: string | null;
-          youtube_video_id?: string;
+          youtube_video_id?: string | null;
           thumbnail_url?: string | null;
           category?: string | null;
           categories?: string[];

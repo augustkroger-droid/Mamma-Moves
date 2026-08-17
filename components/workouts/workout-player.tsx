@@ -65,8 +65,12 @@ function youtubeEmbedUrl(videoId: string) {
 }
 
 function youtubeWorkoutPlaylistUrl(exercises: WorkoutExercise[]) {
-  const videoIds = exercises.map((exercise) => exercise.youtube_video_id).slice(0, 50);
-  return `https://www.youtube.com/watch_videos?video_ids=${videoIds.join(",")}`;
+  const videoIds = exercises
+    .map((exercise) => exercise.youtube_video_id)
+    .filter((videoId): videoId is string => Boolean(videoId))
+    .slice(0, 50);
+
+  return videoIds.length > 0 ? `https://www.youtube.com/watch_videos?video_ids=${videoIds.join(",")}` : null;
 }
 
 async function loadCurrentStreak(supabase: ReturnType<typeof createBrowserSupabaseClient>) {
@@ -147,6 +151,10 @@ export function WorkoutPlayer() {
       window.removeEventListener("keydown", handleKeyDown);
     };
   }, [isVideoFullscreen]);
+
+  useEffect(() => {
+    setIsVideoFullscreen(false);
+  }, [currentIndex]);
 
   function toggleVideoFullscreen() {
     setIsVideoFullscreen((current) => !current);
@@ -549,36 +557,46 @@ export function WorkoutPlayer() {
         className={`video-frame workout-video${isVideoFullscreen ? " workout-video--fill-screen" : ""}`}
         aria-label={currentExercise.name}
       >
-        <iframe
-          key={`${currentExercise.id}-${currentIndex}`}
-          src={youtubeEmbedUrl(currentExercise.youtube_video_id)}
-          title={currentExercise.name}
-          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share; fullscreen"
-          allowFullScreen
-        />
-        <button
-          className="video-fullscreen-button"
-          type="button"
-          onClick={toggleVideoFullscreen}
-          aria-label={isVideoFullscreen ? "Stäng helskärm" : "Fyll skärmen"}
-          title={isVideoFullscreen ? "Stäng helskärm" : "Fyll skärmen"}
-        >
-          {isVideoFullscreen ? <Minimize2 aria-hidden="true" size={20} /> : <Maximize2 aria-hidden="true" size={20} />}
-        </button>
+        {currentExercise.youtube_video_id ? (
+          <>
+            <iframe
+              key={`${currentExercise.id}-${currentIndex}`}
+              src={youtubeEmbedUrl(currentExercise.youtube_video_id)}
+              title={currentExercise.name}
+              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share; fullscreen"
+              allowFullScreen
+            />
+            <button
+              className="video-fullscreen-button"
+              type="button"
+              onClick={toggleVideoFullscreen}
+              aria-label={isVideoFullscreen ? "Stäng helskärm" : "Fyll skärmen"}
+              title={isVideoFullscreen ? "Stäng helskärm" : "Fyll skärmen"}
+            >
+              {isVideoFullscreen ? <Minimize2 aria-hidden="true" size={20} /> : <Maximize2 aria-hidden="true" size={20} />}
+            </button>
+          </>
+        ) : (
+          <div className="video-placeholder">
+            <p>Den här övningen har ingen video ännu.</p>
+          </div>
+        )}
       </section>
 
       <section className="workout-details">
         <div className="workout-meta-row">
           <p className="timer-pill">{formatDuration(elapsedSeconds)}</p>
-          <a
-            className="youtube-cast-link"
-            href={youtubeCastHref}
-            target="_blank"
-            rel="noreferrer"
-          >
-            <Cast aria-hidden="true" size={17} />
-            Casta till YouTube
-          </a>
+          {youtubeCastHref ? (
+            <a
+              className="youtube-cast-link"
+              href={youtubeCastHref}
+              target="_blank"
+              rel="noreferrer"
+            >
+              <Cast aria-hidden="true" size={17} />
+              Casta till YouTube
+            </a>
+          ) : null}
         </div>
         <h2>{currentExercise.name}</h2>
         {currentExercise.description ? <p className="muted">{currentExercise.description}</p> : null}

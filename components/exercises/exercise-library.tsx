@@ -19,6 +19,18 @@ function youtubeThumbnail(videoId: string) {
   return `https://img.youtube.com/vi/${videoId}/hqdefault.jpg`;
 }
 
+function exerciseImageUrl(exercise: Pick<Exercise, "thumbnail_url" | "youtube_video_id">) {
+  if (exercise.thumbnail_url) {
+    return exercise.thumbnail_url;
+  }
+
+  if (exercise.youtube_video_id) {
+    return youtubeThumbnail(exercise.youtube_video_id);
+  }
+
+  return null;
+}
+
 function shuffleExercises(exercises: Exercise[]) {
   return [...exercises].sort(() => Math.random() - 0.5);
 }
@@ -156,12 +168,16 @@ export function ExerciseLibrary() {
       <section className="screen-stack" aria-label="Övningslista">
         {visibleExercises.map((exercise) => {
           const isSelected = selectedIds.has(exercise.id);
-          const thumbnailUrl = exercise.thumbnail_url || youtubeThumbnail(exercise.youtube_video_id);
+          const thumbnailUrl = exerciseImageUrl(exercise);
 
           return (
             <article key={exercise.id} className={`exercise-card card ${isSelected ? "is-selected" : ""}`}>
               <button type="button" onClick={() => toggleSelected(exercise.id)}>
-                <Image src={thumbnailUrl} alt="" width={192} height={120} unoptimized />
+                {thumbnailUrl ? (
+                  <Image src={thumbnailUrl} alt="" width={192} height={120} unoptimized />
+                ) : (
+                  <span className="template-fallback" aria-hidden="true" />
+                )}
                 <span>
                   <strong>{exercise.name}</strong>
                   <small>{formatExerciseCategories(exercise)}</small>

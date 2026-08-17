@@ -211,7 +211,7 @@ export function WorkoutTemplateList() {
         {templates.map((template) => {
           const firstExercise = template.exercises[0];
           const thumbnailUrl = template.thumbnail_url || (
-            firstExercise ? youtubeThumbnail(firstExercise.youtube_video_id) : null
+            firstExercise?.youtube_video_id ? youtubeThumbnail(firstExercise.youtube_video_id) : null
           );
 
           return (

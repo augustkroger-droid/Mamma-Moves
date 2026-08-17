@@ -225,10 +225,10 @@ export function WorkoutTemplateArchive() {
       ) : (
         <section className="screen-stack" aria-label="Arkiverade pass">
           {templates.map((template) => {
-            const firstExercise = template.exercises[0];
-            const thumbnailUrl = template.thumbnail_url || (
-              firstExercise ? youtubeThumbnail(firstExercise.youtube_video_id) : null
-            );
+          const firstExercise = template.exercises[0];
+          const thumbnailUrl = template.thumbnail_url || (
+            firstExercise?.youtube_video_id ? youtubeThumbnail(firstExercise.youtube_video_id) : null
+          );
             const isBusy = busyIds.has(template.id);
 
             return (

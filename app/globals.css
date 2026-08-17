@@ -908,7 +908,8 @@ a {
   background: var(--color-surface-soft);
 }
 
-.editable-exercise-row img {
+.editable-exercise-row img,
+.editable-exercise-row .template-fallback {
   width: 72px;
   aspect-ratio: 16 / 10;
   border-radius: 12px;

@@ -75,6 +75,18 @@ function youtubeThumbnail(videoId: string) {
   return `https://img.youtube.com/vi/${videoId}/hqdefault.jpg`;
 }
 
+function exerciseImageUrl(exercise: Pick<Exercise, "thumbnail_url" | "youtube_video_id">) {
+  if (exercise.thumbnail_url) {
+    return exercise.thumbnail_url;
+  }
+
+  if (exercise.youtube_video_id) {
+    return youtubeThumbnail(exercise.youtube_video_id);
+  }
+
+  return null;
+}
+
 function extractYoutubeVideoId(value: string) {
   const input = value.trim();
 
@@ -204,7 +216,7 @@ export function AdminDashboard() {
       id: exercise.id,
       name: exercise.name,
       description: exercise.description ?? "",
-      youtubeInput: exercise.youtube_video_id,
+      youtubeInput: exercise.youtube_video_id ?? "",
       thumbnailUrl: exercise.thumbnail_url ?? "",
       categories: exerciseCategories(exercise),
       newCategory: "",
@@ -229,12 +241,7 @@ export function AdminDashboard() {
       return;
     }
 
-    const youtubeVideoId = extractYoutubeVideoId(exerciseForm.youtubeInput);
-
-    if (!youtubeVideoId) {
-      setMessage("Lägg in en YouTube-länk eller ett video-ID.");
-      return;
-    }
+    const youtubeVideoId = extractYoutubeVideoId(exerciseForm.youtubeInput) || null;
 
     setIsSaving(true);
     setMessage(null);
@@ -594,7 +601,7 @@ export function AdminDashboard() {
             </label>
             <label className="form-field">
               <span>YouTube-länk eller video-ID</span>
-              <input value={exerciseForm.youtubeInput} onChange={(event) => setExerciseForm((current) => ({ ...current, youtubeInput: event.target.value }))} required />
+              <input value={exerciseForm.youtubeInput} onChange={(event) => setExerciseForm((current) => ({ ...current, youtubeInput: event.target.value }))} placeholder="Valfritt" />
             </label>
             <div className="form-field">
               <span>Kategorier</span>
@@ -657,7 +664,11 @@ export function AdminDashboard() {
             {exercises.map((exercise) => (
               <article key={exercise.id} className="template-card template-card--compact card">
                 <div className="template-card__link archive-template-summary">
-                  <Image src={exercise.thumbnail_url || youtubeThumbnail(exercise.youtube_video_id)} alt="" width={192} height={120} unoptimized />
+                  {exerciseImageUrl(exercise) ? (
+                    <Image src={exerciseImageUrl(exercise) ?? ""} alt="" width={192} height={120} unoptimized />
+                  ) : (
+                    <span className="template-fallback" aria-hidden="true" />
+                  )}
                   <span>
                     <strong>{exercise.name}</strong>
                     <small>{formatExerciseCategories(exercise)} · {exercise.active ? "Aktiv" : "Inaktiv"}</small>
@@ -719,7 +730,11 @@ export function AdminDashboard() {
               <div className="editable-exercise-list">
                 {selectedWorkoutExercises.map((exercise, index) => (
                   <article key={exercise.id} className="editable-exercise-row">
-                    <Image src={exercise.thumbnail_url || youtubeThumbnail(exercise.youtube_video_id)} alt="" width={128} height={80} unoptimized />
+                    {exerciseImageUrl(exercise) ? (
+                      <Image src={exerciseImageUrl(exercise) ?? ""} alt="" width={128} height={80} unoptimized />
+                    ) : (
+                      <span className="template-fallback" aria-hidden="true" />
+                    )}
                     <span>
                       <strong>{exercise.name}</strong>
                       <small>{formatExerciseCategories(exercise)}</small>
@@ -799,3 +814,4 @@ export function AdminDashboard() {
     </div>
   );
 }
+
