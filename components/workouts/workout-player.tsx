@@ -517,7 +517,7 @@ export function WorkoutPlayer() {
           key={`${currentExercise.id}-${currentIndex}`}
           src={youtubeEmbedUrl(currentExercise.youtube_video_id)}
           title={currentExercise.name}
-          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share; fullscreen"
           allowFullScreen
         />
       </section>
