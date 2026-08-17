@@ -290,6 +290,15 @@ a {
   line-height: 1.55;
 }
 
+.page-header-with-action {
+  display: grid;
+  gap: 14px;
+}
+
+.page-header-action {
+  width: fit-content;
+}
+
 .section-title {
   margin: 0;
   font-size: 1.28rem;
