@@ -14,6 +14,10 @@ function normalizeUsername(value: string | undefined) {
   return value?.trim() ?? "";
 }
 
+function isPermissionDenied(error: { code?: string } | null) {
+  return error?.code === "42501";
+}
+
 export async function POST(request: Request) {
   try {
     const payload = await request.json() as SignupPayload;
@@ -40,11 +44,11 @@ export async function POST(request: Request) {
       .eq("username", username)
       .maybeSingle();
 
-    if (existingProfileError) {
+    if (existingProfileError && !isPermissionDenied(existingProfileError)) {
       return Response.json({ ok: false, error: existingProfileError.message }, { status: 500 });
     }
 
-    if (existingProfile) {
+    if (!existingProfileError && existingProfile) {
       return Response.json({ ok: false, error: "Användarnamnet är redan taget." }, { status: 409 });
     }
 
@@ -73,11 +77,15 @@ export async function POST(request: Request) {
     });
 
     if (profileError) {
+      if (isPermissionDenied(profileError)) {
+        return Response.json({ ok: true, profileCreated: false });
+      }
+
       await supabase.auth.admin.deleteUser(createdUser.user.id);
       return Response.json({ ok: false, error: profileError.message }, { status: 500 });
     }
 
-    return Response.json({ ok: true });
+    return Response.json({ ok: true, profileCreated: true });
   } catch (error) {
     return Response.json(
       {

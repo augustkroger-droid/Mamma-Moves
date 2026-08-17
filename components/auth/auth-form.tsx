@@ -54,7 +54,7 @@ export function AuthForm() {
         return;
       }
 
-      const { error: signInError } = await supabase.auth.signInWithPassword({
+      const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
         email,
         password
       });
@@ -63,6 +63,21 @@ export function AuthForm() {
         setMessage(signInError.message);
         setIsLoading(false);
         return;
+      }
+
+      if (signInData.user) {
+        const { error: profileError } = await supabase.from("profiles").upsert({
+          id: signInData.user.id,
+          username,
+          email,
+          updated_at: new Date().toISOString()
+        });
+
+        if (profileError) {
+          setMessage(`Kontot skapades, men profilen kunde inte sparas: ${profileError.message}`);
+          setIsLoading(false);
+          return;
+        }
       }
 
       const targetHref = await getPostLoginHref();
