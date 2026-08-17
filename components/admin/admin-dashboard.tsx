@@ -165,7 +165,7 @@ export function AdminDashboard() {
     }
 
     const [exerciseResult, profileResult, templateResult] = await Promise.all([
-      supabase.from("exercises").select("*").order("name", { ascending: true }),
+      supabase.from("exercises").select("*").eq("active", true).order("name", { ascending: true }),
       supabase.from("profiles").select("*").order("username", { ascending: true }),
       supabase
         .from("workout_templates")
@@ -213,6 +213,15 @@ export function AdminDashboard() {
     setActiveTab("exercises");
   }
 
+  function removeExerciseFromAdminState(exerciseId: string) {
+    setExercises((current) => current.filter((exercise) => exercise.id !== exerciseId));
+    setWorkoutForm((current) => ({
+      ...current,
+      exerciseIds: current.exerciseIds.filter((id) => id !== exerciseId)
+    }));
+    setExerciseForm((current) => current.id === exerciseId ? emptyExerciseForm : current);
+  }
+
   async function saveExercise(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
 
@@ -257,7 +266,7 @@ export function AdminDashboard() {
     setIsSaving(false);
   }
 
-  async function deleteExercise(exercise: Exercise) {
+  async function deleteExerciseFromAdmin(exercise: Exercise) {
     const confirmed = window.confirm(
       `Är du säker på att du vill radera "${exercise.name}"? Övningen tas bort från pass där den ingår.`
     );
@@ -280,27 +289,38 @@ export function AdminDashboard() {
       return;
     }
 
-    const deleteResult = await supabase.from("exercises").delete().eq("id", exercise.id);
+    const deleteResult = await supabase
+      .from("exercises")
+      .delete()
+      .eq("id", exercise.id)
+      .select("id");
 
-    if (deleteResult.error?.code === "23503") {
-      const deactivateResult = await supabase
-        .from("exercises")
-        .update({ active: false, updated_at: new Date().toISOString() })
-        .eq("id", exercise.id);
-
-      if (deactivateResult.error) {
-        setMessage(deactivateResult.error.message);
-      } else {
-        setMessage("Övningen används i historik och har därför inaktiverats.");
-        setExerciseForm((current) => current.id === exercise.id ? emptyExerciseForm : current);
-        await loadAdminData();
-      }
-    } else if (deleteResult.error) {
-      setMessage(deleteResult.error.message);
-    } else {
+    if (!deleteResult.error && (deleteResult.data ?? []).length > 0) {
       setMessage("Övningen är raderad.");
-      setExerciseForm((current) => current.id === exercise.id ? emptyExerciseForm : current);
-      await loadAdminData();
+      removeExerciseFromAdminState(exercise.id);
+      setIsSaving(false);
+      return;
+    }
+
+    if (deleteResult.error && deleteResult.error.code !== "23503") {
+      setMessage(deleteResult.error.message);
+      setIsSaving(false);
+      return;
+    }
+
+    const deactivateResult = await supabase
+      .from("exercises")
+      .update({ active: false, updated_at: new Date().toISOString() })
+      .eq("id", exercise.id)
+      .select("id");
+
+    if (deactivateResult.error) {
+      setMessage(deactivateResult.error.message);
+    } else if ((deactivateResult.data ?? []).length === 0) {
+      setMessage("Kunde inte radera övningen. Ladda om adminläget och försök igen.");
+    } else {
+      setMessage("Övningen är borttagen från aktivt innehåll.");
+      removeExerciseFromAdminState(exercise.id);
     }
 
     setIsSaving(false);
@@ -647,7 +667,7 @@ export function AdminDashboard() {
                   <button className="icon-button" type="button" onClick={() => editExercise(exercise)} title="Redigera">
                     <Edit3 aria-hidden="true" size={18} />
                   </button>
-                  <button className="icon-button danger-icon-button" type="button" onClick={() => deleteExercise(exercise)} title="Radera">
+                  <button className="icon-button danger-icon-button" type="button" onClick={() => deleteExerciseFromAdmin(exercise)} title="Radera">
                     <Trash2 aria-hidden="true" size={18} />
                   </button>
                 </div>
