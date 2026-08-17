@@ -1015,35 +1015,6 @@ a {
   outline-offset: 2px;
 }
 
-.workout-video--fill-screen {
-  position: fixed;
-  inset: 0;
-  z-index: 80;
-  width: 100vw;
-  height: 100vh;
-  height: 100dvh;
-  max-width: none;
-  margin: 0;
-  border-radius: 0;
-  background: #000;
-  aspect-ratio: auto;
-}
-
-.workout-video--fill-screen iframe {
-  top: 50%;
-  left: 50%;
-  right: auto;
-  bottom: auto;
-  width: max(100vw, calc(100dvh * 16 / 9));
-  height: max(100dvh, calc(100vw * 9 / 16));
-  transform: translate(-50%, -50%);
-}
-
-.workout-video--fill-screen .video-fullscreen-button {
-  right: max(14px, env(safe-area-inset-right));
-  top: max(14px, env(safe-area-inset-top));
-}
-
 .workout-details {
   display: grid;
   gap: 10px;
@@ -1421,6 +1392,35 @@ a {
 
 .video-frame video {
   object-fit: cover;
+}
+
+.video-frame.workout-video--fill-screen {
+  position: fixed;
+  inset: 0;
+  z-index: 80;
+  width: 100vw;
+  height: 100vh;
+  height: 100dvh;
+  max-width: none;
+  margin: 0;
+  border-radius: 0;
+  background: #000;
+  aspect-ratio: auto;
+}
+
+.video-frame.workout-video--fill-screen iframe {
+  top: 50%;
+  left: 50%;
+  right: auto;
+  bottom: auto;
+  width: max(100vw, calc(100dvh * 16 / 9));
+  height: max(100dvh, calc(100vw * 9 / 16));
+  transform: translate(-50%, -50%);
+}
+
+.video-frame.workout-video--fill-screen .video-fullscreen-button {
+  right: max(14px, env(safe-area-inset-right));
+  top: max(14px, env(safe-area-inset-top));
 }
 
 .video-frame:fullscreen,
