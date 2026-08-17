@@ -18,6 +18,7 @@ type CompletedExercise = {
 };
 
 const introVideoUrl = process.env.NEXT_PUBLIC_INTRO_VIDEO_URL;
+const bloopersVideoUrl = process.env.NEXT_PUBLIC_BLOOPERS_VIDEO_URL;
 
 export function IntroContent() {
   const router = useRouter();
@@ -185,6 +186,22 @@ export function IntroContent() {
           Färdiga pass
         </Link>
       </section>
+
+      {bloopersVideoUrl ? (
+        <section className="card bloopers-card" aria-label="Bloopers">
+          <div>
+            <p className="eyebrow">Bonusklipp</p>
+            <h2 className="section-title">Bloopers</h2>
+            <p className="muted">Lite skratt från inspelningen, längst ner där det får vara en ren bonus.</p>
+          </div>
+          <div className="video-frame">
+            <video controls playsInline preload="metadata">
+              <source src={bloopersVideoUrl} type="video/mp4" />
+              Din webbläsare kan inte spela upp videon.
+            </video>
+          </div>
+        </section>
+      ) : null}
     </div>
   );
 }

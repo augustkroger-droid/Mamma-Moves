@@ -169,6 +169,21 @@ a {
   line-height: 1.55;
 }
 
+.bloopers-card {
+  display: grid;
+  gap: 14px;
+  padding: 16px;
+}
+
+.bloopers-card .eyebrow {
+  margin-bottom: 4px;
+}
+
+.bloopers-card .muted {
+  margin: 6px 0 0;
+  line-height: 1.45;
+}
+
 .home-status-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
