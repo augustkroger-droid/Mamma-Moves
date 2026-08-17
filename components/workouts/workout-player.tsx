@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
-import { ArrowLeft, ArrowRight, CheckCircle2, Loader2, Maximize2, Minimize2, Pause, Play, Square } from "lucide-react";
+import { ArrowLeft, ArrowRight, Cast, CheckCircle2, Loader2, Maximize2, Minimize2, Pause, Play, Square } from "lucide-react";
 import { createBrowserSupabaseClient } from "@/lib/supabase/client";
 import { localDateKey } from "@/lib/dates/local-date";
 import { summarizeStreak, type StreakPauseRange } from "@/lib/streak/streak";
@@ -62,6 +62,11 @@ function formatDuration(totalSeconds: number) {
 
 function youtubeEmbedUrl(videoId: string) {
   return `https://www.youtube.com/embed/${videoId}`;
+}
+
+function youtubeWorkoutPlaylistUrl(exercises: WorkoutExercise[]) {
+  const videoIds = exercises.map((exercise) => exercise.youtube_video_id).slice(0, 50);
+  return `https://www.youtube.com/watch_videos?video_ids=${videoIds.join(",")}`;
 }
 
 async function loadCurrentStreak(supabase: ReturnType<typeof createBrowserSupabaseClient>) {
@@ -524,6 +529,7 @@ export function WorkoutPlayer() {
   const currentExercise = workout.exercises[currentIndex];
   const completedCount = sessionExercises.filter((exercise) => exercise.completed).length;
   const isLastExercise = currentIndex === workout.exercises.length - 1;
+  const youtubeCastHref = youtubeWorkoutPlaylistUrl(workout.exercises);
 
   return (
     <main className="workout-shell">
@@ -562,7 +568,18 @@ export function WorkoutPlayer() {
       </section>
 
       <section className="workout-details">
-        <p className="timer-pill">{formatDuration(elapsedSeconds)}</p>
+        <div className="workout-meta-row">
+          <p className="timer-pill">{formatDuration(elapsedSeconds)}</p>
+          <a
+            className="youtube-cast-link"
+            href={youtubeCastHref}
+            target="_blank"
+            rel="noreferrer"
+          >
+            <Cast aria-hidden="true" size={17} />
+            Casta till YouTube
+          </a>
+        </div>
         <h2>{currentExercise.name}</h2>
         {currentExercise.description ? <p className="muted">{currentExercise.description}</p> : null}
         {saveError ? <p className="form-message">{saveError}</p> : null}
