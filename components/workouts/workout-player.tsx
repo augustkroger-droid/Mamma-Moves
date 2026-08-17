@@ -117,54 +117,34 @@ export function WorkoutPlayer() {
   const [isVideoFullscreen, setIsVideoFullscreen] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
   const [summary, setSummary] = useState<SavedSummary | null>(null);
-  const videoFrameRef = useRef<HTMLElement | null>(null);
   const sessionIdRef = useRef<string | null>(null);
   const elapsedSecondsRef = useRef(0);
   const isFinishedRef = useRef(false);
 
   useEffect(() => {
-    function handleFullscreenChange() {
-      const documentWithWebkit = document as Document & { webkitFullscreenElement?: Element | null };
-      setIsVideoFullscreen(
-        document.fullscreenElement === videoFrameRef.current ||
-        documentWithWebkit.webkitFullscreenElement === videoFrameRef.current
-      );
+    if (!isVideoFullscreen) {
+      return;
     }
 
-    document.addEventListener("fullscreenchange", handleFullscreenChange);
-    document.addEventListener("webkitfullscreenchange", handleFullscreenChange);
+    const previousOverflow = document.body.style.overflow;
+
+    function handleKeyDown(event: KeyboardEvent) {
+      if (event.key === "Escape") {
+        setIsVideoFullscreen(false);
+      }
+    }
+
+    document.body.style.overflow = "hidden";
+    window.addEventListener("keydown", handleKeyDown);
 
     return () => {
-      document.removeEventListener("fullscreenchange", handleFullscreenChange);
-      document.removeEventListener("webkitfullscreenchange", handleFullscreenChange);
+      document.body.style.overflow = previousOverflow;
+      window.removeEventListener("keydown", handleKeyDown);
     };
-  }, []);
+  }, [isVideoFullscreen]);
 
-  async function toggleVideoFullscreen() {
-    const element = videoFrameRef.current as (HTMLElement & { webkitRequestFullscreen?: () => Promise<void> | void }) | null;
-    const documentWithWebkit = document as Document & {
-      webkitExitFullscreen?: () => Promise<void> | void;
-      webkitFullscreenElement?: Element | null;
-    };
-
-    if (!element) {
-      return;
-    }
-
-    if (document.fullscreenElement || documentWithWebkit.webkitFullscreenElement) {
-      if (document.exitFullscreen) {
-        await document.exitFullscreen();
-      } else {
-        await documentWithWebkit.webkitExitFullscreen?.();
-      }
-      return;
-    }
-
-    if (element.requestFullscreen) {
-      await element.requestFullscreen();
-    } else {
-      await element.webkitRequestFullscreen?.();
-    }
+  function toggleVideoFullscreen() {
+    setIsVideoFullscreen((current) => !current);
   }
 
   const persistDuration = useCallback(async (status?: "started" | "paused" | "completed") => {
@@ -560,8 +540,7 @@ export function WorkoutPlayer() {
       </header>
 
       <section
-        ref={videoFrameRef}
-        className="video-frame workout-video"
+        className={`video-frame workout-video${isVideoFullscreen ? " workout-video--fill-screen" : ""}`}
         aria-label={currentExercise.name}
       >
         <iframe
