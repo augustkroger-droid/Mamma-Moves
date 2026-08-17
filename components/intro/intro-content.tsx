@@ -18,7 +18,39 @@ type CompletedExercise = {
 };
 
 const introVideoUrl = process.env.NEXT_PUBLIC_INTRO_VIDEO_URL;
-const bloopersVideoUrl = process.env.NEXT_PUBLIC_BLOOPERS_VIDEO_URL;
+const defaultBloopersYoutubeUrl = "https://www.youtube.com/watch?v=2cHJaVPwDwE";
+const bloopersYoutubeUrl = process.env.NEXT_PUBLIC_BLOOPERS_YOUTUBE_URL || defaultBloopersYoutubeUrl;
+
+function youtubeEmbedUrl(value: string) {
+  const input = value.trim();
+
+  try {
+    const url = new URL(input);
+
+    if (url.hostname.includes("youtu.be")) {
+      const videoId = url.pathname.replace("/", "");
+      return videoId ? `https://www.youtube.com/embed/${videoId}` : null;
+    }
+
+    const queryVideoId = url.searchParams.get("v");
+
+    if (queryVideoId) {
+      return `https://www.youtube.com/embed/${queryVideoId}`;
+    }
+
+    const pathParts = url.pathname.split("/").filter(Boolean);
+
+    if (pathParts[0] === "embed" && pathParts[1]) {
+      return `https://www.youtube.com/embed/${pathParts[1]}`;
+    }
+  } catch {
+    return input ? `https://www.youtube.com/embed/${input}` : null;
+  }
+
+  return null;
+}
+
+const bloopersEmbedUrl = youtubeEmbedUrl(bloopersYoutubeUrl);
 
 export function IntroContent() {
   const router = useRouter();
@@ -187,7 +219,7 @@ export function IntroContent() {
         </Link>
       </section>
 
-      {bloopersVideoUrl ? (
+      {bloopersEmbedUrl ? (
         <section className="card bloopers-card" aria-label="Bloopers">
           <div>
             <p className="eyebrow">Bonusklipp</p>
@@ -195,10 +227,12 @@ export function IntroContent() {
             <p className="muted">Lite skratt från inspelningen, längst ner där det får vara en ren bonus.</p>
           </div>
           <div className="video-frame">
-            <video controls playsInline preload="metadata">
-              <source src={bloopersVideoUrl} type="video/mp4" />
-              Din webbläsare kan inte spela upp videon.
-            </video>
+            <iframe
+              title="Mamma Moves bloopers"
+              src={bloopersEmbedUrl}
+              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+              allowFullScreen
+            />
           </div>
         </section>
       ) : null}
