@@ -574,6 +574,7 @@ export function WorkoutPlayer() {
 
   const currentExercise = workout.exercises[currentIndex];
   const currentEmbedUrl = exerciseEmbedUrl(currentExercise);
+  const hasMemoryImage = !currentEmbedUrl && Boolean(currentExercise.thumbnail_url);
   const completedCount = sessionExercises.filter((exercise) => exercise.completed).length;
   const isLastExercise = currentIndex === workout.exercises.length - 1;
   const youtubeCastHref = youtubeWorkoutPlaylistUrl(workout.exercises);
@@ -593,7 +594,7 @@ export function WorkoutPlayer() {
       </header>
 
       <section
-        className={`video-frame workout-video${isVideoFullscreen ? " workout-video--fill-screen" : ""}`}
+        className={`video-frame workout-video${hasMemoryImage ? " workout-video--image" : ""}${isVideoFullscreen ? " workout-video--fill-screen" : ""}`}
         aria-label={currentExercise.name}
       >
         {currentEmbedUrl ? (
