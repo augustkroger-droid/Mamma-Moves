@@ -20,6 +20,7 @@ import {
   formatExerciseCategories,
   normalizeCategoryName
 } from "@/lib/exercises/categories";
+import { exerciseImageUrl, parseExerciseVideo } from "@/lib/exercises/video";
 import { createBrowserSupabaseClient } from "@/lib/supabase/client";
 import type { Database } from "@/types/database";
 
@@ -70,53 +71,6 @@ const emptyWorkoutForm: WorkoutForm = {
   exerciseIds: [],
   userIds: []
 };
-
-function youtubeThumbnail(videoId: string) {
-  return `https://img.youtube.com/vi/${videoId}/hqdefault.jpg`;
-}
-
-function exerciseImageUrl(exercise: Pick<Exercise, "thumbnail_url" | "youtube_video_id">) {
-  if (exercise.thumbnail_url) {
-    return exercise.thumbnail_url;
-  }
-
-  if (exercise.youtube_video_id) {
-    return youtubeThumbnail(exercise.youtube_video_id);
-  }
-
-  return null;
-}
-
-function extractYoutubeVideoId(value: string) {
-  const input = value.trim();
-
-  if (!input) {
-    return "";
-  }
-
-  try {
-    const url = new URL(input);
-
-    if (url.hostname.includes("youtu.be")) {
-      return url.pathname.replace("/", "");
-    }
-
-    if (url.searchParams.get("v")) {
-      return url.searchParams.get("v") ?? "";
-    }
-
-    const pathParts = url.pathname.split("/").filter(Boolean);
-    const knownPrefix = ["embed", "shorts", "live"].find((prefix) => pathParts[0] === prefix);
-
-    if (knownPrefix && pathParts[1]) {
-      return pathParts[1];
-    }
-  } catch {
-    return input;
-  }
-
-  return input;
-}
 
 function moveItem<T>(items: T[], fromIndex: number, toIndex: number) {
   const next = [...items];
@@ -221,7 +175,7 @@ export function AdminDashboard() {
       id: exercise.id,
       name: exercise.name,
       description: exercise.description ?? "",
-      youtubeInput: exercise.youtube_video_id ?? "",
+      youtubeInput: exercise.video_url ?? exercise.youtube_video_id ?? "",
       thumbnailUrl: exercise.thumbnail_url ?? "",
       categories: exerciseCategories(exercise),
       newCategory: "",
@@ -246,7 +200,7 @@ export function AdminDashboard() {
       return;
     }
 
-    const youtubeVideoId = extractYoutubeVideoId(exerciseForm.youtubeInput) || null;
+    const parsedVideo = parseExerciseVideo(exerciseForm.youtubeInput);
 
     setIsSaving(true);
     setMessage(null);
@@ -255,7 +209,9 @@ export function AdminDashboard() {
     const payload = {
       name: exerciseForm.name,
       description: exerciseForm.description || null,
-      youtube_video_id: youtubeVideoId,
+      youtube_video_id: parsedVideo.youtubeVideoId,
+      video_url: parsedVideo.videoUrl,
+      video_provider: parsedVideo.videoProvider,
       thumbnail_url: exerciseForm.thumbnailUrl || null,
       category: categories[0] ?? null,
       categories,
@@ -605,8 +561,8 @@ export function AdminDashboard() {
               <input value={exerciseForm.name} onChange={(event) => setExerciseForm((current) => ({ ...current, name: event.target.value }))} required />
             </label>
             <label className="form-field">
-              <span>YouTube-länk eller video-ID</span>
-              <input value={exerciseForm.youtubeInput} onChange={(event) => setExerciseForm((current) => ({ ...current, youtubeInput: event.target.value }))} placeholder="Valfritt" />
+              <span>Videolänk</span>
+              <input value={exerciseForm.youtubeInput} onChange={(event) => setExerciseForm((current) => ({ ...current, youtubeInput: event.target.value }))} placeholder="Valfritt, t.ex. YouTube, Instagram eller Facebook" />
             </label>
             <div className="form-field">
               <span>Kategorier</span>
@@ -645,7 +601,7 @@ export function AdminDashboard() {
             </label>
             <label className="form-field">
               <span>Bildlänk</span>
-              <input value={exerciseForm.thumbnailUrl} onChange={(event) => setExerciseForm((current) => ({ ...current, thumbnailUrl: event.target.value }))} placeholder="Tomt = YouTube-bild" />
+              <input value={exerciseForm.thumbnailUrl} onChange={(event) => setExerciseForm((current) => ({ ...current, thumbnailUrl: event.target.value }))} placeholder="Valfritt, annars YouTube-bild eller fallback" />
             </label>
             <label className="check-row">
               <input type="checkbox" checked={exerciseForm.active} onChange={(event) => setExerciseForm((current) => ({ ...current, active: event.target.checked }))} />

@@ -2,7 +2,15 @@ import type { Database } from "@/types/database";
 
 export type WorkoutExercise = Pick<
   Database["public"]["Tables"]["exercises"]["Row"],
-  "id" | "name" | "description" | "youtube_video_id" | "thumbnail_url" | "category" | "categories"
+  | "id"
+  | "name"
+  | "description"
+  | "youtube_video_id"
+  | "video_url"
+  | "video_provider"
+  | "thumbnail_url"
+  | "category"
+  | "categories"
 >;
 
 export type ActiveWorkout = {

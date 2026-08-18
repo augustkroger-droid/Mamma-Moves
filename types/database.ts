@@ -37,6 +37,8 @@ export type Database = {
           name: string;
           description: string | null;
           youtube_video_id: string | null;
+          video_url: string | null;
+          video_provider: "youtube" | "instagram" | "facebook" | "external" | "none";
           thumbnail_url: string | null;
           category: string | null;
           categories: string[];
@@ -50,6 +52,8 @@ export type Database = {
           name: string;
           description?: string | null;
           youtube_video_id?: string | null;
+          video_url?: string | null;
+          video_provider?: "youtube" | "instagram" | "facebook" | "external" | "none";
           thumbnail_url?: string | null;
           category?: string | null;
           categories?: string[];
@@ -62,6 +66,8 @@ export type Database = {
           name?: string;
           description?: string | null;
           youtube_video_id?: string | null;
+          video_url?: string | null;
+          video_provider?: "youtube" | "instagram" | "facebook" | "external" | "none";
           thumbnail_url?: string | null;
           category?: string | null;
           categories?: string[];

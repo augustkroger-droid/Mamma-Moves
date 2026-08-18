@@ -8,41 +8,11 @@ import {
   collectExerciseCategoryOptions,
   normalizeCategoryName
 } from "@/lib/exercises/categories";
+import { parseExerciseVideo } from "@/lib/exercises/video";
 import { createBrowserSupabaseClient } from "@/lib/supabase/client";
 import type { Database } from "@/types/database";
 
 type Exercise = Database["public"]["Tables"]["exercises"]["Row"];
-
-function extractYoutubeVideoId(value: string) {
-  const input = value.trim();
-
-  if (!input) {
-    return "";
-  }
-
-  try {
-    const url = new URL(input);
-
-    if (url.hostname.includes("youtu.be")) {
-      return url.pathname.replace("/", "");
-    }
-
-    if (url.searchParams.get("v")) {
-      return url.searchParams.get("v") ?? "";
-    }
-
-    const pathParts = url.pathname.split("/").filter(Boolean);
-    const knownPrefix = ["embed", "shorts", "live"].find((prefix) => pathParts[0] === prefix);
-
-    if (knownPrefix && pathParts[1]) {
-      return pathParts[1];
-    }
-  } catch {
-    return input;
-  }
-
-  return input;
-}
 
 function mergeCategories(categories: string[], newCategory: string) {
   return [
@@ -58,7 +28,7 @@ export function ExerciseEditor() {
   const router = useRouter();
   const supabase = useMemo(() => createBrowserSupabaseClient(), []);
   const [name, setName] = useState("");
-  const [youtubeInput, setYoutubeInput] = useState("");
+  const [videoInput, setVideoInput] = useState("");
   const [description, setDescription] = useState("");
   const [thumbnailUrl, setThumbnailUrl] = useState("");
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
@@ -109,10 +79,13 @@ export function ExerciseEditor() {
     }
 
     const categories = mergeCategories(selectedCategories, newCategory);
+    const parsedVideo = parseExerciseVideo(videoInput);
     const { error } = await supabase.from("exercises").insert({
       name,
       description: description || null,
-      youtube_video_id: extractYoutubeVideoId(youtubeInput) || null,
+      youtube_video_id: parsedVideo.youtubeVideoId,
+      video_url: parsedVideo.videoUrl,
+      video_provider: parsedVideo.videoProvider,
       thumbnail_url: thumbnailUrl || null,
       category: categories[0] ?? null,
       categories,
@@ -149,11 +122,11 @@ export function ExerciseEditor() {
         </label>
 
         <label className="form-field">
-          <span>YouTube-länk eller video-ID</span>
+          <span>Videolänk</span>
           <input
-            value={youtubeInput}
-            onChange={(event) => setYoutubeInput(event.target.value)}
-            placeholder="Valfritt"
+            value={videoInput}
+            onChange={(event) => setVideoInput(event.target.value)}
+            placeholder="Valfritt, t.ex. YouTube, Instagram eller Facebook"
           />
         </label>
 
@@ -199,7 +172,7 @@ export function ExerciseEditor() {
           <input
             value={thumbnailUrl}
             onChange={(event) => setThumbnailUrl(event.target.value)}
-            placeholder="Tomt = YouTube-bild eller fallback"
+            placeholder="Valfritt, annars YouTube-bild eller fallback"
           />
         </label>
 

@@ -6,6 +6,7 @@ import Image from "next/image";
 import { useParams, useRouter } from "next/navigation";
 import { Archive, ArrowLeft, ArrowDown, ArrowUp, Loader2, Plus, Play, X } from "lucide-react";
 import { formatExerciseCategories } from "@/lib/exercises/categories";
+import { exerciseImageUrl } from "@/lib/exercises/video";
 import { createBrowserSupabaseClient } from "@/lib/supabase/client";
 import { saveActiveWorkout, type WorkoutExercise } from "@/lib/workouts/active-workout";
 import type { Database } from "@/types/database";
@@ -13,22 +14,6 @@ import type { Database } from "@/types/database";
 type WorkoutTemplate = Database["public"]["Tables"]["workout_templates"]["Row"];
 type TemplateExercise = Database["public"]["Tables"]["workout_template_exercises"]["Row"];
 type Exercise = Database["public"]["Tables"]["exercises"]["Row"];
-
-function youtubeThumbnail(videoId: string) {
-  return `https://img.youtube.com/vi/${videoId}/hqdefault.jpg`;
-}
-
-function exerciseImageUrl(exercise: Pick<WorkoutExercise, "thumbnail_url" | "youtube_video_id">) {
-  if (exercise.thumbnail_url) {
-    return exercise.thumbnail_url;
-  }
-
-  if (exercise.youtube_video_id) {
-    return youtubeThumbnail(exercise.youtube_video_id);
-  }
-
-  return null;
-}
 
 function moveItem<T>(items: T[], fromIndex: number, toIndex: number) {
   const next = [...items];

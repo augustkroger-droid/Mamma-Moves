@@ -5,6 +5,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { Archive, ArrowRight, Loader2, Plus } from "lucide-react";
 import { isAdminEmail } from "@/lib/admin/is-admin";
+import { exerciseImageUrl } from "@/lib/exercises/video";
 import { createBrowserSupabaseClient } from "@/lib/supabase/client";
 import { type WorkoutExercise } from "@/lib/workouts/active-workout";
 import type { Database } from "@/types/database";
@@ -16,10 +17,6 @@ type Exercise = Database["public"]["Tables"]["exercises"]["Row"];
 type TemplateWithExercises = WorkoutTemplate & {
   exercises: WorkoutExercise[];
 };
-
-function youtubeThumbnail(videoId: string) {
-  return `https://img.youtube.com/vi/${videoId}/hqdefault.jpg`;
-}
 
 export function WorkoutTemplateList() {
   const supabase = useMemo(() => createBrowserSupabaseClient(), []);
@@ -89,7 +86,7 @@ export function WorkoutTemplateList() {
       const exerciseResult = exerciseIds.length > 0
         ? await supabase
             .from("exercises")
-            .select("id, name, description, youtube_video_id, thumbnail_url, category, categories, active, created_by, created_at, updated_at")
+            .select("id, name, description, youtube_video_id, video_url, video_provider, thumbnail_url, category, categories, active, created_by, created_at, updated_at")
             .in("id", exerciseIds)
         : { data: [], error: null };
 
@@ -210,9 +207,7 @@ export function WorkoutTemplateList() {
       <section className="screen-stack" aria-label="Färdiga pass">
         {templates.map((template) => {
           const firstExercise = template.exercises[0];
-          const thumbnailUrl = template.thumbnail_url || (
-            firstExercise?.youtube_video_id ? youtubeThumbnail(firstExercise.youtube_video_id) : null
-          );
+          const thumbnailUrl = template.thumbnail_url || (firstExercise ? exerciseImageUrl(firstExercise) : null);
 
           return (
             <article key={template.id} className="template-card template-card--compact card">

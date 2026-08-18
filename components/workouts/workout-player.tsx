@@ -6,6 +6,7 @@ import { useSearchParams } from "next/navigation";
 import { ArrowLeft, ArrowRight, Cast, CheckCircle2, Loader2, Maximize2, Minimize2, Pause, Play, Square } from "lucide-react";
 import { createBrowserSupabaseClient } from "@/lib/supabase/client";
 import { localDateKey } from "@/lib/dates/local-date";
+import { exerciseEmbedUrl, youtubeWorkoutPlaylistUrl } from "@/lib/exercises/video";
 import { summarizeStreak, type StreakPauseRange } from "@/lib/streak/streak";
 import {
   clearActiveWorkout,
@@ -58,19 +59,6 @@ function formatDuration(totalSeconds: number) {
   }
 
   return `${minutes} min ${seconds.toString().padStart(2, "0")} sek`;
-}
-
-function youtubeEmbedUrl(videoId: string) {
-  return `https://www.youtube.com/embed/${videoId}`;
-}
-
-function youtubeWorkoutPlaylistUrl(exercises: WorkoutExercise[]) {
-  const videoIds = exercises
-    .map((exercise) => exercise.youtube_video_id)
-    .filter((videoId): videoId is string => Boolean(videoId))
-    .slice(0, 50);
-
-  return videoIds.length > 0 ? `https://www.youtube.com/watch_videos?video_ids=${videoIds.join(",")}` : null;
 }
 
 async function loadCurrentStreak(supabase: ReturnType<typeof createBrowserSupabaseClient>) {
@@ -251,7 +239,7 @@ export function WorkoutPlayer() {
     const { data: exercises, error: exercisesError } = exerciseIds.length > 0
       ? await supabase
           .from("exercises")
-          .select("id, name, description, youtube_video_id, thumbnail_url, category, categories")
+          .select("id, name, description, youtube_video_id, video_url, video_provider, thumbnail_url, category, categories")
           .in("id", exerciseIds)
       : { data: [], error: null };
 
@@ -584,6 +572,7 @@ export function WorkoutPlayer() {
   }
 
   const currentExercise = workout.exercises[currentIndex];
+  const currentEmbedUrl = exerciseEmbedUrl(currentExercise);
   const completedCount = sessionExercises.filter((exercise) => exercise.completed).length;
   const isLastExercise = currentIndex === workout.exercises.length - 1;
   const youtubeCastHref = youtubeWorkoutPlaylistUrl(workout.exercises);
@@ -606,11 +595,11 @@ export function WorkoutPlayer() {
         className={`video-frame workout-video${isVideoFullscreen ? " workout-video--fill-screen" : ""}`}
         aria-label={currentExercise.name}
       >
-        {currentExercise.youtube_video_id ? (
+        {currentEmbedUrl ? (
           <>
             <iframe
               key={`${currentExercise.id}-${currentIndex}`}
-              src={youtubeEmbedUrl(currentExercise.youtube_video_id)}
+              src={currentEmbedUrl}
               title={currentExercise.name}
               allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share; fullscreen"
               allowFullScreen
@@ -625,6 +614,13 @@ export function WorkoutPlayer() {
               {isVideoFullscreen ? <Minimize2 aria-hidden="true" size={20} /> : <Maximize2 aria-hidden="true" size={20} />}
             </button>
           </>
+        ) : currentExercise.video_url ? (
+          <div className="video-placeholder">
+            <p>Videon kan inte spelas upp direkt i appen.</p>
+            <a className="button secondary" href={currentExercise.video_url} target="_blank" rel="noreferrer">
+              Öppna videolänk
+            </a>
+          </div>
         ) : (
           <div className="video-placeholder">
             <p>Den här övningen har ingen video ännu.</p>

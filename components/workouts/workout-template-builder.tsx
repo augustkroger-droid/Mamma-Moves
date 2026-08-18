@@ -6,26 +6,11 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { ArrowDown, ArrowLeft, ArrowUp, Loader2, Plus, Save, X } from "lucide-react";
 import { formatExerciseCategories } from "@/lib/exercises/categories";
+import { exerciseImageUrl } from "@/lib/exercises/video";
 import { createBrowserSupabaseClient } from "@/lib/supabase/client";
 import type { Database } from "@/types/database";
 
 type Exercise = Database["public"]["Tables"]["exercises"]["Row"];
-
-function youtubeThumbnail(videoId: string) {
-  return `https://img.youtube.com/vi/${videoId}/hqdefault.jpg`;
-}
-
-function exerciseImageUrl(exercise: Pick<Exercise, "thumbnail_url" | "youtube_video_id">) {
-  if (exercise.thumbnail_url) {
-    return exercise.thumbnail_url;
-  }
-
-  if (exercise.youtube_video_id) {
-    return youtubeThumbnail(exercise.youtube_video_id);
-  }
-
-  return null;
-}
 
 function moveItem<T>(items: T[], fromIndex: number, toIndex: number) {
   const next = [...items];
