@@ -104,21 +104,15 @@ export function ExerciseLibrary() {
     setErrorMessage(null);
     setDeletingIds((current) => new Set(current).add(exercise.id));
 
-    await supabase
-      .from("workout_template_exercises")
-      .delete()
-      .eq("exercise_id", exercise.id);
+    const { data, error } = await supabase.rpc("delete_own_exercise", {
+      exercise_id_to_delete: exercise.id
+    });
 
-    const deleteResult = await supabase
-      .from("exercises")
-      .delete()
-      .eq("id", exercise.id)
-      .eq("created_by", userId)
-      .select("id");
-
-    if (deleteResult.error && deleteResult.error.code !== "23503") {
-      setErrorMessage(deleteResult.error.message);
-    } else if (!deleteResult.error && (deleteResult.data ?? []).length > 0) {
+    if (error) {
+      setErrorMessage(error.message);
+    } else if (!data) {
+      setErrorMessage("Kunde inte ta bort övningen. Ladda om sidan och försök igen.");
+    } else {
       setExercises((current) => current.filter((item) => item.id !== exercise.id));
       setSelectedIds((current) => {
         const next = new Set(current);
@@ -126,25 +120,6 @@ export function ExerciseLibrary() {
         return next;
       });
       setGeneratedWorkout((current) => current.filter((item) => item.id !== exercise.id));
-    } else {
-      const deactivateResult = await supabase
-        .from("exercises")
-        .update({ active: false, updated_at: new Date().toISOString() })
-        .eq("id", exercise.id)
-        .eq("created_by", userId)
-        .select("id");
-
-      if (deactivateResult.error) {
-        setErrorMessage(deactivateResult.error.message);
-      } else {
-        setExercises((current) => current.filter((item) => item.id !== exercise.id));
-        setSelectedIds((current) => {
-          const next = new Set(current);
-          next.delete(exercise.id);
-          return next;
-        });
-        setGeneratedWorkout((current) => current.filter((item) => item.id !== exercise.id));
-      }
     }
 
     setDeletingIds((current) => {
