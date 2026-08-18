@@ -177,7 +177,12 @@ export function AdminDashboard() {
     }
 
     const [exerciseResult, profileResult, templateResult] = await Promise.all([
-      supabase.from("exercises").select("*").eq("active", true).order("name", { ascending: true }),
+      supabase
+        .from("exercises")
+        .select("*")
+        .eq("active", true)
+        .or(`created_by.is.null,created_by.eq.${currentUserId}`)
+        .order("name", { ascending: true }),
       supabase.from("profiles").select("*").order("username", { ascending: true }),
       supabase
         .from("workout_templates")
@@ -260,7 +265,7 @@ export function AdminDashboard() {
 
     const result = exerciseForm.id
       ? await supabase.from("exercises").update(payload).eq("id", exerciseForm.id)
-      : await supabase.from("exercises").insert({ ...payload, created_by: userId });
+      : await supabase.from("exercises").insert({ ...payload, created_by: null });
 
     if (result.error) {
       setMessage(result.error.message);
