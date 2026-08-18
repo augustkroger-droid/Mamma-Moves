@@ -20,6 +20,7 @@ import {
   formatExerciseCategories,
   normalizeCategoryName
 } from "@/lib/exercises/categories";
+import { uploadExerciseImage } from "@/lib/exercises/image-upload";
 import { exerciseImageUrl, parseExerciseVideo } from "@/lib/exercises/video";
 import { createBrowserSupabaseClient } from "@/lib/supabase/client";
 import type { Database } from "@/types/database";
@@ -111,6 +112,7 @@ export function AdminDashboard() {
   const [profiles, setProfiles] = useState<Profile[]>([]);
   const [templates, setTemplates] = useState<WorkoutTemplate[]>([]);
   const [exerciseForm, setExerciseForm] = useState<ExerciseForm>(emptyExerciseForm);
+  const [exerciseImageFile, setExerciseImageFile] = useState<File | null>(null);
   const [workoutForm, setWorkoutForm] = useState<WorkoutForm>(emptyWorkoutForm);
   const [message, setMessage] = useState<string | null>(null);
 
@@ -181,6 +183,7 @@ export function AdminDashboard() {
       newCategory: "",
       active: exercise.active
     });
+    setExerciseImageFile(null);
     setActiveTab("exercises");
   }
 
@@ -206,13 +209,25 @@ export function AdminDashboard() {
     setMessage(null);
 
     const categories = mergeCategories(exerciseForm.categories, exerciseForm.newCategory);
+    let savedThumbnailUrl = exerciseForm.thumbnailUrl || null;
+
+    try {
+      if (exerciseImageFile) {
+        savedThumbnailUrl = await uploadExerciseImage(supabase, userId, exerciseImageFile);
+      }
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : "Kunde inte ladda upp bilden.");
+      setIsSaving(false);
+      return;
+    }
+
     const payload = {
       name: exerciseForm.name,
       description: exerciseForm.description || null,
       youtube_video_id: parsedVideo.youtubeVideoId,
       video_url: parsedVideo.videoUrl,
       video_provider: parsedVideo.videoProvider,
-      thumbnail_url: exerciseForm.thumbnailUrl || null,
+      thumbnail_url: savedThumbnailUrl,
       category: categories[0] ?? null,
       categories,
       active: exerciseForm.active,
@@ -228,6 +243,7 @@ export function AdminDashboard() {
     } else {
       setMessage(exerciseForm.id ? "Övningen är uppdaterad." : "Övningen är skapad.");
       setExerciseForm(emptyExerciseForm);
+      setExerciseImageFile(null);
       await loadAdminData();
     }
 
@@ -564,6 +580,15 @@ export function AdminDashboard() {
               <span>Videolänk</span>
               <input value={exerciseForm.youtubeInput} onChange={(event) => setExerciseForm((current) => ({ ...current, youtubeInput: event.target.value }))} placeholder="Valfritt, t.ex. YouTube, Instagram eller Facebook" />
             </label>
+            <label className="form-field">
+              <span>Bild</span>
+              <input
+                type="file"
+                accept="image/*"
+                onChange={(event) => setExerciseImageFile(event.target.files?.[0] ?? null)}
+              />
+              {exerciseImageFile ? <small className="field-hint">{exerciseImageFile.name}</small> : null}
+            </label>
             <div className="form-field">
               <span>Kategorier</span>
               <details className="category-picker">
@@ -613,7 +638,10 @@ export function AdminDashboard() {
                 Spara övning
               </button>
               {exerciseForm.id ? (
-                <button className="button secondary" type="button" onClick={() => setExerciseForm(emptyExerciseForm)}>
+                <button className="button secondary" type="button" onClick={() => {
+                  setExerciseForm(emptyExerciseForm);
+                  setExerciseImageFile(null);
+                }}>
                   <X aria-hidden="true" size={20} />
                   Avbryt
                 </button>

@@ -483,7 +483,13 @@ a {
   background: var(--color-primary-soft);
 }
 
-.exercise-card button,
+.exercise-card__row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: stretch;
+}
+
+.exercise-card__select,
 .template-card__link {
   display: grid;
   width: 100%;
@@ -496,6 +502,22 @@ a {
   background: transparent;
   text-align: left;
   cursor: pointer;
+}
+
+.exercise-card__delete {
+  display: grid;
+  width: 48px;
+  place-items: center;
+  border: 0;
+  border-left: 1px solid var(--color-border);
+  color: var(--color-primary);
+  background: transparent;
+  cursor: pointer;
+}
+
+.exercise-card__delete:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
 }
 
 .template-card__link {
@@ -904,6 +926,12 @@ a {
 .form-field textarea:focus {
   border-color: var(--color-primary);
   outline: 3px solid var(--color-primary-soft);
+}
+
+.field-hint {
+  color: var(--color-muted);
+  font-size: 0.82rem;
+  font-weight: 750;
 }
 
 .editable-exercise-list,
@@ -1437,6 +1465,10 @@ a {
   object-fit: cover;
 }
 
+.exercise-memory-image {
+  object-fit: cover;
+}
+
 .video-frame.workout-video--fill-screen {
   position: fixed;
   inset: 0;
@@ -1523,6 +1555,13 @@ a {
 .video-placeholder .button {
   width: auto;
   min-height: 42px;
+}
+
+.video-placeholder--overlay {
+  align-content: end;
+  place-items: end center;
+  padding-bottom: 18px;
+  background: linear-gradient(180deg, transparent 45%, rgba(0, 0, 0, 0.48));
 }
 
 .bottom-nav {

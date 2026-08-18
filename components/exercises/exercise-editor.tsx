@@ -8,6 +8,7 @@ import {
   collectExerciseCategoryOptions,
   normalizeCategoryName
 } from "@/lib/exercises/categories";
+import { uploadExerciseImage } from "@/lib/exercises/image-upload";
 import { parseExerciseVideo } from "@/lib/exercises/video";
 import { createBrowserSupabaseClient } from "@/lib/supabase/client";
 import type { Database } from "@/types/database";
@@ -31,6 +32,7 @@ export function ExerciseEditor() {
   const [videoInput, setVideoInput] = useState("");
   const [description, setDescription] = useState("");
   const [thumbnailUrl, setThumbnailUrl] = useState("");
+  const [imageFile, setImageFile] = useState<File | null>(null);
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
   const [newCategory, setNewCategory] = useState("");
   const [categoryOptions, setCategoryOptions] = useState<string[]>([]);
@@ -80,13 +82,25 @@ export function ExerciseEditor() {
 
     const categories = mergeCategories(selectedCategories, newCategory);
     const parsedVideo = parseExerciseVideo(videoInput);
+    let savedThumbnailUrl = thumbnailUrl || null;
+
+    try {
+      if (imageFile) {
+        savedThumbnailUrl = await uploadExerciseImage(supabase, userData.user.id, imageFile);
+      }
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : "Kunde inte ladda upp bilden.");
+      setIsSaving(false);
+      return;
+    }
+
     const { error } = await supabase.from("exercises").insert({
       name,
       description: description || null,
       youtube_video_id: parsedVideo.youtubeVideoId,
       video_url: parsedVideo.videoUrl,
       video_provider: parsedVideo.videoProvider,
-      thumbnail_url: thumbnailUrl || null,
+      thumbnail_url: savedThumbnailUrl,
       category: categories[0] ?? null,
       categories,
       active: true,
@@ -128,6 +142,16 @@ export function ExerciseEditor() {
             onChange={(event) => setVideoInput(event.target.value)}
             placeholder="Valfritt, t.ex. YouTube, Instagram eller Facebook"
           />
+        </label>
+
+        <label className="form-field">
+          <span>Bild</span>
+          <input
+            type="file"
+            accept="image/*"
+            onChange={(event) => setImageFile(event.target.files?.[0] ?? null)}
+          />
+          {imageFile ? <small className="field-hint">{imageFile.name}</small> : null}
         </label>
 
         <div className="form-field">

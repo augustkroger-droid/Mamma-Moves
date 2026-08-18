@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import Image from "next/image";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { ArrowLeft, ArrowRight, Cast, CheckCircle2, Loader2, Maximize2, Minimize2, Pause, Play, Square } from "lucide-react";
@@ -613,6 +614,24 @@ export function WorkoutPlayer() {
             >
               {isVideoFullscreen ? <Minimize2 aria-hidden="true" size={20} /> : <Maximize2 aria-hidden="true" size={20} />}
             </button>
+          </>
+        ) : currentExercise.thumbnail_url ? (
+          <>
+            <Image
+              className="exercise-memory-image"
+              src={currentExercise.thumbnail_url}
+              alt={currentExercise.name}
+              fill
+              sizes="100vw"
+              unoptimized
+            />
+            {currentExercise.video_url ? (
+              <div className="video-placeholder video-placeholder--overlay">
+                <a className="button secondary" href={currentExercise.video_url} target="_blank" rel="noreferrer">
+                  Öppna videolänk
+                </a>
+              </div>
+            ) : null}
           </>
         ) : currentExercise.video_url ? (
           <div className="video-placeholder">

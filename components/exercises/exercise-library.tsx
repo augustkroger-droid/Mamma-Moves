@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
-import { Check, Loader2, PlusCircle, Search, Shuffle } from "lucide-react";
+import { Check, Loader2, PlusCircle, Search, Shuffle, Trash2 } from "lucide-react";
 import {
   collectExerciseCategoryOptions,
   exerciseCategories,
@@ -26,6 +26,8 @@ export function ExerciseLibrary() {
   const [exercises, setExercises] = useState<Exercise[]>([]);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [generatedWorkout, setGeneratedWorkout] = useState<Exercise[]>([]);
+  const [userId, setUserId] = useState<string | null>(null);
+  const [deletingIds, setDeletingIds] = useState<Set<string>>(new Set());
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("Alla");
   const [isLoading, setIsLoading] = useState(true);
@@ -33,16 +35,21 @@ export function ExerciseLibrary() {
 
   useEffect(() => {
     async function loadExercises() {
-      const { data, error } = await supabase
-        .from("exercises")
-        .select("*")
-        .eq("active", true)
-        .order("name", { ascending: true });
+      const [userResult, exerciseResult] = await Promise.all([
+        supabase.auth.getUser(),
+        supabase
+          .from("exercises")
+          .select("*")
+          .eq("active", true)
+          .order("name", { ascending: true })
+      ]);
 
-      if (error) {
-        setErrorMessage(error.message);
+      setUserId(userResult.data.user?.id ?? null);
+
+      if (exerciseResult.error) {
+        setErrorMessage(exerciseResult.error.message);
       } else {
-        setExercises(data ?? []);
+        setExercises(exerciseResult.data ?? []);
       }
 
       setIsLoading(false);
@@ -81,6 +88,70 @@ export function ExerciseLibrary() {
       exercises: workoutExercises
     });
     router.push("/workout");
+  }
+
+  async function deleteOwnExercise(exercise: Exercise) {
+    if (!userId || exercise.created_by !== userId || deletingIds.has(exercise.id)) {
+      return;
+    }
+
+    const confirmed = window.confirm(`Är du säker på att du vill ta bort "${exercise.name}"?`);
+
+    if (!confirmed) {
+      return;
+    }
+
+    setErrorMessage(null);
+    setDeletingIds((current) => new Set(current).add(exercise.id));
+
+    await supabase
+      .from("workout_template_exercises")
+      .delete()
+      .eq("exercise_id", exercise.id);
+
+    const deleteResult = await supabase
+      .from("exercises")
+      .delete()
+      .eq("id", exercise.id)
+      .eq("created_by", userId)
+      .select("id");
+
+    if (deleteResult.error && deleteResult.error.code !== "23503") {
+      setErrorMessage(deleteResult.error.message);
+    } else if (!deleteResult.error && (deleteResult.data ?? []).length > 0) {
+      setExercises((current) => current.filter((item) => item.id !== exercise.id));
+      setSelectedIds((current) => {
+        const next = new Set(current);
+        next.delete(exercise.id);
+        return next;
+      });
+      setGeneratedWorkout((current) => current.filter((item) => item.id !== exercise.id));
+    } else {
+      const deactivateResult = await supabase
+        .from("exercises")
+        .update({ active: false, updated_at: new Date().toISOString() })
+        .eq("id", exercise.id)
+        .eq("created_by", userId)
+        .select("id");
+
+      if (deactivateResult.error) {
+        setErrorMessage(deactivateResult.error.message);
+      } else {
+        setExercises((current) => current.filter((item) => item.id !== exercise.id));
+        setSelectedIds((current) => {
+          const next = new Set(current);
+          next.delete(exercise.id);
+          return next;
+        });
+        setGeneratedWorkout((current) => current.filter((item) => item.id !== exercise.id));
+      }
+    }
+
+    setDeletingIds((current) => {
+      const next = new Set(current);
+      next.delete(exercise.id);
+      return next;
+    });
   }
 
   const categories = ["Alla", ...collectExerciseCategoryOptions(exercises)];
@@ -154,23 +225,39 @@ export function ExerciseLibrary() {
         {visibleExercises.map((exercise) => {
           const isSelected = selectedIds.has(exercise.id);
           const thumbnailUrl = exerciseImageUrl(exercise);
+          const canDelete = Boolean(userId && exercise.created_by === userId);
+          const isDeleting = deletingIds.has(exercise.id);
 
           return (
             <article key={exercise.id} className={`exercise-card card ${isSelected ? "is-selected" : ""}`}>
-              <button type="button" onClick={() => toggleSelected(exercise.id)}>
-                {thumbnailUrl ? (
-                  <Image src={thumbnailUrl} alt="" width={192} height={120} unoptimized />
-                ) : (
-                  <span className="template-fallback" aria-hidden="true" />
-                )}
-                <span>
-                  <strong>{exercise.name}</strong>
-                  <small>{formatExerciseCategories(exercise)}</small>
-                </span>
-                <span className="select-indicator" aria-hidden="true">
-                  {isSelected ? <Check size={20} /> : <PlusCircle size={20} />}
-                </span>
-              </button>
+              <div className="exercise-card__row">
+                <button className="exercise-card__select" type="button" onClick={() => toggleSelected(exercise.id)}>
+                  {thumbnailUrl ? (
+                    <Image src={thumbnailUrl} alt="" width={192} height={120} unoptimized />
+                  ) : (
+                    <span className="template-fallback" aria-hidden="true" />
+                  )}
+                  <span>
+                    <strong>{exercise.name}</strong>
+                    <small>{formatExerciseCategories(exercise)}</small>
+                  </span>
+                  <span className="select-indicator" aria-hidden="true">
+                    {isSelected ? <Check size={20} /> : <PlusCircle size={20} />}
+                  </span>
+                </button>
+                {canDelete ? (
+                  <button
+                    className="exercise-card__delete"
+                    type="button"
+                    title="Ta bort övning"
+                    aria-label={`Ta bort ${exercise.name}`}
+                    onClick={() => void deleteOwnExercise(exercise)}
+                    disabled={isDeleting}
+                  >
+                    {isDeleting ? <Loader2 className="spin" aria-hidden="true" size={18} /> : <Trash2 aria-hidden="true" size={18} />}
+                  </button>
+                ) : null}
+              </div>
             </article>
           );
         })}
