@@ -2,10 +2,11 @@
 
 import { FormEvent, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import { ArrowLeft, Loader2, Save } from "lucide-react";
 import {
   collectExerciseCategoryOptions,
+  exerciseCategories,
   normalizeCategoryName
 } from "@/lib/exercises/categories";
 import { uploadExerciseImage } from "@/lib/exercises/image-upload";
@@ -27,7 +28,10 @@ function mergeCategories(categories: string[], newCategory: string) {
 
 export function ExerciseEditor() {
   const router = useRouter();
+  const params = useParams<{ id?: string }>();
   const supabase = useMemo(() => createBrowserSupabaseClient(), []);
+  const exerciseId = params.id ?? null;
+  const isEditing = Boolean(exerciseId);
   const [name, setName] = useState("");
   const [videoInput, setVideoInput] = useState("");
   const [description, setDescription] = useState("");
@@ -41,23 +45,61 @@ export function ExerciseEditor() {
   const [message, setMessage] = useState<string | null>(null);
 
   useEffect(() => {
-    async function loadCategories() {
-      const { data, error } = await supabase
-        .from("exercises")
-        .select("category, categories")
-        .eq("active", true);
+    async function loadEditorData() {
+      const [userResult, categoryResult, exerciseResult] = await Promise.all([
+        supabase.auth.getUser(),
+        supabase
+          .from("exercises")
+          .select("category, categories")
+          .eq("active", true),
+        exerciseId
+          ? supabase
+              .from("exercises")
+              .select("*")
+              .eq("id", exerciseId)
+              .single()
+          : Promise.resolve({ data: null, error: null })
+      ]);
 
-      if (error) {
-        setMessage(error.message);
+      if (categoryResult.error) {
+        setMessage(categoryResult.error.message);
       } else {
-        setCategoryOptions(collectExerciseCategoryOptions((data ?? []) as Exercise[]));
+        setCategoryOptions(collectExerciseCategoryOptions((categoryResult.data ?? []) as Exercise[]));
+      }
+
+      if (exerciseResult.error) {
+        setMessage(exerciseResult.error.message);
+      } else if (exerciseResult.data) {
+        const exercise = exerciseResult.data as Exercise;
+        const currentUserId = userResult.data.user?.id ?? null;
+
+        if (!currentUserId || exercise.created_by !== currentUserId) {
+          setMessage("Du kan bara redigera övningar som du själv har skapat.");
+        } else {
+          setName(exercise.name);
+          setVideoInput(exercise.video_url ?? exercise.youtube_video_id ?? "");
+          setDescription(exercise.description ?? "");
+          setThumbnailUrl(exercise.thumbnail_url ?? "");
+          setSelectedCategories(exerciseCategories(exercise));
+        }
       }
 
       setIsLoading(false);
     }
 
-    void loadCategories();
-  }, [supabase]);
+    void loadEditorData();
+  }, [exerciseId, supabase]);
+
+  async function reloadCategoryOptions() {
+    const { data, error } = await supabase
+      .from("exercises")
+      .select("category, categories")
+      .eq("active", true);
+
+    if (!error) {
+      setCategoryOptions(collectExerciseCategoryOptions((data ?? []) as Exercise[]));
+    }
+  }
 
   function toggleCategory(category: string) {
     setSelectedCategories((current) => (
@@ -94,7 +136,7 @@ export function ExerciseEditor() {
       return;
     }
 
-    const { error } = await supabase.from("exercises").insert({
+    const payload = {
       name,
       description: description || null,
       youtube_video_id: parsedVideo.youtubeVideoId,
@@ -103,18 +145,44 @@ export function ExerciseEditor() {
       thumbnail_url: savedThumbnailUrl,
       category: categories[0] ?? null,
       categories,
-      active: true,
-      created_by: userData.user.id
-    });
+      active: true
+    };
 
-    if (error) {
-      setMessage(error.message);
+    const result = exerciseId
+      ? await supabase
+          .from("exercises")
+          .update(payload)
+          .eq("id", exerciseId)
+          .eq("created_by", userData.user.id)
+          .select("id")
+          .single()
+      : await supabase
+          .from("exercises")
+          .insert({
+            ...payload,
+            created_by: userData.user.id
+          })
+          .select("id")
+          .single();
+
+    if (result.error) {
+      setMessage(result.error.message);
       setIsSaving(false);
       return;
     }
 
+    await reloadCategoryOptions();
     router.push("/exercises");
     router.refresh();
+  }
+
+  if (isLoading) {
+    return (
+      <section className="empty-state card" aria-live="polite">
+        <Loader2 className="spin" aria-hidden="true" />
+        <p>Hämtar övning...</p>
+      </section>
+    );
   }
 
   return (
@@ -125,8 +193,12 @@ export function ExerciseEditor() {
           Övningar
         </Link>
         <p className="eyebrow">Egen övning</p>
-        <h1 className="page-title">Lägg till ny övning.</h1>
-        <p className="page-lead">Skapa en egen övning som du kan använda i dina pass.</p>
+        <h1 className="page-title">{isEditing ? "Redigera övning." : "Lägg till ny övning."}</h1>
+        <p className="page-lead">
+          {isEditing
+            ? "Ändra övningen så den passar dina pass."
+            : "Skapa en egen övning som du kan använda i dina pass."}
+        </p>
       </header>
 
       <form className="card workout-editor-panel" onSubmit={saveExercise}>
@@ -204,7 +276,7 @@ export function ExerciseEditor() {
 
         <button className="button full" type="submit" disabled={isSaving}>
           {isSaving ? <Loader2 className="spin" aria-hidden="true" size={20} /> : <Save aria-hidden="true" size={20} />}
-          Spara övning
+          {isEditing ? "Spara ändringar" : "Spara övning"}
         </button>
       </form>
     </div>

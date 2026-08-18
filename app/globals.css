@@ -504,18 +504,28 @@ a {
   cursor: pointer;
 }
 
-.exercise-card__delete {
+.exercise-card__actions {
   display: grid;
   width: 48px;
+  border-left: 1px solid var(--color-border);
+}
+
+.exercise-card__action {
+  display: grid;
+  width: 48px;
+  min-height: 48px;
   place-items: center;
   border: 0;
-  border-left: 1px solid var(--color-border);
   color: var(--color-primary);
   background: transparent;
   cursor: pointer;
 }
 
-.exercise-card__delete:disabled {
+.exercise-card__action + .exercise-card__action {
+  border-top: 1px solid var(--color-border);
+}
+
+.exercise-card__action:disabled {
   cursor: not-allowed;
   opacity: 0.55;
 }

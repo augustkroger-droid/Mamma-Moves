@@ -2,8 +2,9 @@
 
 import { useEffect, useMemo, useState } from "react";
 import Image from "next/image";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Check, Loader2, PlusCircle, Search, Shuffle, Trash2 } from "lucide-react";
+import { Check, Edit3, Loader2, PlusCircle, Search, Shuffle, Trash2 } from "lucide-react";
 import {
   collectExerciseCategoryOptions,
   exerciseCategories,
@@ -200,7 +201,7 @@ export function ExerciseLibrary() {
         {visibleExercises.map((exercise) => {
           const isSelected = selectedIds.has(exercise.id);
           const thumbnailUrl = exerciseImageUrl(exercise);
-          const canDelete = Boolean(userId && exercise.created_by === userId);
+          const canManage = Boolean(userId && exercise.created_by === userId);
           const isDeleting = deletingIds.has(exercise.id);
 
           return (
@@ -220,17 +221,27 @@ export function ExerciseLibrary() {
                     {isSelected ? <Check size={20} /> : <PlusCircle size={20} />}
                   </span>
                 </button>
-                {canDelete ? (
-                  <button
-                    className="exercise-card__delete"
-                    type="button"
-                    title="Ta bort övning"
-                    aria-label={`Ta bort ${exercise.name}`}
-                    onClick={() => void deleteOwnExercise(exercise)}
-                    disabled={isDeleting}
-                  >
-                    {isDeleting ? <Loader2 className="spin" aria-hidden="true" size={18} /> : <Trash2 aria-hidden="true" size={18} />}
-                  </button>
+                {canManage ? (
+                  <span className="exercise-card__actions">
+                    <Link
+                      className="exercise-card__action"
+                      href={`/exercises/${exercise.id}/edit`}
+                      title="Redigera övning"
+                      aria-label={`Redigera ${exercise.name}`}
+                    >
+                      <Edit3 aria-hidden="true" size={18} />
+                    </Link>
+                    <button
+                      className="exercise-card__action"
+                      type="button"
+                      title="Ta bort övning"
+                      aria-label={`Ta bort ${exercise.name}`}
+                      onClick={() => void deleteOwnExercise(exercise)}
+                      disabled={isDeleting}
+                    >
+                      {isDeleting ? <Loader2 className="spin" aria-hidden="true" size={18} /> : <Trash2 aria-hidden="true" size={18} />}
+                    </button>
+                  </span>
                 ) : null}
               </div>
             </article>
