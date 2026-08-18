@@ -383,6 +383,11 @@ a {
   width: 100%;
 }
 
+.button:disabled {
+  cursor: not-allowed;
+  opacity: 0.52;
+}
+
 .muted {
   color: var(--color-muted);
 }
@@ -1075,11 +1080,18 @@ a {
   position: sticky;
   bottom: calc(12px + env(safe-area-inset-bottom));
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 10px;
   margin-top: auto;
   padding-top: 8px;
   background: linear-gradient(to top, var(--color-bg) 72%, rgba(255, 250, 247, 0));
+}
+
+.workout-actions .button {
+  min-height: 46px;
+  gap: 6px;
+  padding: 0 10px;
+  font-size: 0.92rem;
 }
 
 .workout-end-button {

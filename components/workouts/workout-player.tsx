@@ -428,6 +428,55 @@ export function WorkoutPlayer() {
     );
   }
 
+  async function markExerciseIncomplete(index: number) {
+    const sessionId = sessionIdRef.current;
+    const exercise = workout?.exercises[index];
+
+    if (!sessionId || !exercise) {
+      return;
+    }
+
+    const { error } = await supabase
+      .from("workout_session_exercises")
+      .update({
+        completed: false,
+        completed_at: null
+      })
+      .eq("workout_session_id", sessionId)
+      .eq("exercise_id", exercise.id);
+
+    if (error) {
+      throw new Error(error.message);
+    }
+
+    setSessionExercises((current) =>
+      current.map((row) =>
+        row.exercise_id === exercise.id
+          ? { ...row, completed: false, completed_at: null }
+          : row
+      )
+    );
+  }
+
+  async function goToPreviousExercise() {
+    if (currentIndex === 0 || isSaving) {
+      return;
+    }
+
+    setIsSaving(true);
+    setSaveError(null);
+
+    try {
+      const previousIndex = currentIndex - 1;
+      await markExerciseIncomplete(previousIndex);
+      setCurrentIndex(previousIndex);
+    } catch (error) {
+      setSaveError(error instanceof Error ? error.message : "Kunde inte gå tillbaka till övningen.");
+    } finally {
+      setIsSaving(false);
+    }
+  }
+
   async function finishWorkout(
     status: "paused" | "completed",
     completedCount: number,
@@ -612,6 +661,15 @@ export function WorkoutPlayer() {
         >
           <Pause aria-hidden="true" size={18} />
           Pausa
+        </button>
+        <button
+          className="button secondary"
+          type="button"
+          onClick={goToPreviousExercise}
+          disabled={isSaving || currentIndex === 0}
+        >
+          <ArrowLeft aria-hidden="true" size={18} />
+          Tillbaka
         </button>
         <button
           className="button"
