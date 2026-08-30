@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { ChevronLeft, ChevronRight, Loader2 } from "lucide-react";
+import { ChevronLeft, ChevronRight, Loader2, MessageSquarePlus } from "lucide-react";
 import { createBrowserSupabaseClient } from "@/lib/supabase/client";
 import { eachDateInRange, localDateKey } from "@/lib/dates/local-date";
 import { completeOldUnfinishedSessions } from "@/lib/workouts/session-maintenance";
@@ -29,6 +29,14 @@ type Exercise = {
 type StreakPause = {
   start_date: string;
   end_date: string;
+};
+
+type WorkoutComment = {
+  id: string;
+  workout_session_id: string | null;
+  comment_date: string;
+  body: string;
+  created_at: string;
 };
 
 function formatMinutes(seconds: number) {
@@ -70,30 +78,50 @@ export function TrainingCalendar() {
   const [sessionExercises, setSessionExercises] = useState<SessionExercise[]>([]);
   const [exercisesById, setExercisesById] = useState<Map<string, Exercise>>(new Map());
   const [pauses, setPauses] = useState<StreakPause[]>([]);
+  const [comments, setComments] = useState<WorkoutComment[]>([]);
+  const [userId, setUserId] = useState<string | null>(null);
   const [viewedMonth, setViewedMonth] = useState(() => {
     const today = new Date();
     return new Date(today.getFullYear(), today.getMonth(), 1);
   });
   const [selectedDay, setSelectedDay] = useState<string>(localDateKey());
   const [isLoading, setIsLoading] = useState(true);
+  const [isSavingComment, setIsSavingComment] = useState(false);
+  const [newComment, setNewComment] = useState("");
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [commentMessage, setCommentMessage] = useState<string | null>(null);
 
   useEffect(() => {
     async function loadSessions() {
       await completeOldUnfinishedSessions(supabase);
 
-      const { data: sessionRows, error: sessionError } = await supabase
-        .from("workout_sessions")
-        .select("id, started_at, duration_seconds, status")
-        .order("started_at", { ascending: false });
+      const [userResult, sessionResult, commentResult] = await Promise.all([
+        supabase.auth.getUser(),
+        supabase
+          .from("workout_sessions")
+          .select("id, started_at, duration_seconds, status")
+          .order("started_at", { ascending: false }),
+        supabase
+          .from("workout_comments")
+          .select("id, workout_session_id, comment_date, body, created_at")
+          .order("created_at", { ascending: false })
+      ]);
 
-      if (sessionError) {
-        setErrorMessage(sessionError.message);
+      setUserId(userResult.data.user?.id ?? null);
+
+      if (sessionResult.error) {
+        setErrorMessage(sessionResult.error.message);
         setIsLoading(false);
         return;
       }
 
-      const sessionsData = (sessionRows ?? []) as TrainingSession[];
+      if (commentResult.error) {
+        setErrorMessage(commentResult.error.message);
+        setIsLoading(false);
+        return;
+      }
+
+      const sessionsData = (sessionResult.data ?? []) as TrainingSession[];
       const sessionIds = sessionsData.map((session) => session.id);
       const [pauseResult, sessionExercisesResult] = await Promise.all([
         supabase.from("streak_pauses").select("start_date, end_date"),
@@ -133,6 +161,7 @@ export function TrainingCalendar() {
       setSessionExercises(sessionExercisesData);
       setExercisesById(new Map(((exerciseResult.data ?? []) as Exercise[]).map((exercise) => [exercise.id, exercise])));
       setPauses((pauseResult.data ?? []) as StreakPause[]);
+      setComments((commentResult.data ?? []) as WorkoutComment[]);
       setIsLoading(false);
     }
 
@@ -158,6 +187,38 @@ export function TrainingCalendar() {
     setSelectedDay(localDateKey(today));
   }
 
+  async function saveDayComment() {
+    const body = newComment.trim();
+
+    if (!userId || !body || isSavingComment) {
+      return;
+    }
+
+    setIsSavingComment(true);
+    setCommentMessage(null);
+
+    const { data, error } = await supabase
+      .from("workout_comments")
+      .insert({
+        user_id: userId,
+        workout_session_id: null,
+        comment_date: selectedDay,
+        body
+      })
+      .select("id, workout_session_id, comment_date, body, created_at")
+      .single();
+
+    if (error) {
+      setCommentMessage(error.message);
+    } else if (data) {
+      setComments((current) => [data as WorkoutComment, ...current]);
+      setNewComment("");
+      setCommentMessage("Anteckningen är sparad.");
+    }
+
+    setIsSavingComment(false);
+  }
+
   const year = viewedMonth.getFullYear();
   const month = viewedMonth.getMonth();
   const daysInMonth = new Date(year, month + 1, 0).getDate();
@@ -178,6 +239,8 @@ export function TrainingCalendar() {
 
   const selectedSessions = sessionsByDay.get(selectedDay) ?? [];
   const selectedIsPaused = pausedDays.has(selectedDay);
+  const selectedComments = comments.filter((comment) => comment.comment_date === selectedDay);
+  const dayComments = selectedComments.filter((comment) => !comment.workout_session_id);
 
   if (isLoading) {
     return (
@@ -227,19 +290,21 @@ export function TrainingCalendar() {
               completedSessionIds.has(session.id)
             );
             const hasPause = pausedDays.has(key);
+            const hasComment = comments.some((comment) => comment.comment_date === key);
             const isSelected = selectedDay === key;
 
             return (
               <button
                 key={key}
                 type="button"
-                className={`${hasTraining ? "has-training" : ""} ${hasPause ? "has-pause" : ""}`}
+                className={`${hasTraining ? "has-training" : ""} ${hasPause ? "has-pause" : ""} ${hasComment ? "has-note" : ""}`}
                 aria-pressed={isSelected}
                 onClick={() => setSelectedDay(key)}
               >
                 <strong>{day.getDate()}</strong>
                 {hasTraining ? <small>Tränat</small> : null}
                 {!hasTraining && hasPause ? <small>Paus</small> : null}
+                {!hasTraining && !hasPause && hasComment ? <small>Anteckning</small> : null}
               </button>
             );
           })}
@@ -248,7 +313,7 @@ export function TrainingCalendar() {
 
       <section className="card day-details">
         <h2 className="section-title">{formatDayLabel(selectedDay)}</h2>
-        {selectedSessions.length === 0 && !selectedIsPaused ? (
+        {selectedSessions.length === 0 && !selectedIsPaused && selectedComments.length === 0 ? (
           <p className="muted">Ingen träning sparad den här dagen.</p>
         ) : (
           <div className="screen-stack">
@@ -264,6 +329,13 @@ export function TrainingCalendar() {
                   <strong>{sessionTitle(session.status)}</strong>
                   <span>{formatMinutes(session.duration_seconds)}</span>
                 </div>
+                {selectedComments
+                  .filter((comment) => comment.workout_session_id === session.id)
+                  .map((comment) => (
+                    <blockquote key={comment.id} className="workout-note">
+                      {comment.body}
+                    </blockquote>
+                  ))}
                 {session.status !== "completed" && localDateKey(new Date(session.started_at)) === localDateKey() ? (
                   <Link className="button secondary full" href={`/workout?session=${session.id}`}>
                     Fortsätt
@@ -283,8 +355,39 @@ export function TrainingCalendar() {
                 </ul>
               </article>
             ))}
+            {dayComments.length > 0 ? (
+              <div className="day-notes">
+                <h3>Anteckningar</h3>
+                {dayComments.map((comment) => (
+                  <blockquote key={comment.id} className="workout-note">
+                    {comment.body}
+                  </blockquote>
+                ))}
+              </div>
+            ) : null}
           </div>
         )}
+        <div className="day-comment-form">
+          <label className="form-field">
+            <span>Lägg till anteckning</span>
+            <textarea
+              value={newComment}
+              onChange={(event) => setNewComment(event.target.value)}
+              rows={3}
+              placeholder="Skriv något om dagen, passet eller känslan."
+            />
+          </label>
+          {commentMessage ? <p className="form-message">{commentMessage}</p> : null}
+          <button
+            className="button secondary full"
+            type="button"
+            onClick={saveDayComment}
+            disabled={isSavingComment || newComment.trim().length === 0}
+          >
+            {isSavingComment ? <Loader2 className="spin" aria-hidden="true" size={20} /> : <MessageSquarePlus aria-hidden="true" size={20} />}
+            Spara anteckning
+          </button>
+        </div>
       </section>
     </>
   );

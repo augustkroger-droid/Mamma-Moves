@@ -3,6 +3,8 @@ type ExerciseWithCategories = {
   categories?: string[] | null;
 };
 
+export const defaultExerciseCategories = ["Kondition", "Skelett"];
+
 export function normalizeCategoryName(value: string) {
   return value.trim().replace(/\s+/g, " ");
 }
@@ -27,7 +29,7 @@ export function formatExerciseCategories(exercise: ExerciseWithCategories) {
 export function collectExerciseCategoryOptions(exercises: ExerciseWithCategories[]) {
   return [
     ...new Set(
-      exercises.flatMap((exercise) => exerciseCategories(exercise))
+      [...defaultExerciseCategories, ...exercises.flatMap((exercise) => exerciseCategories(exercise))]
     )
   ].sort((first, second) => first.localeCompare(second, "sv-SE"));
 }

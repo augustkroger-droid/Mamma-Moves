@@ -175,6 +175,7 @@ export type Database = {
           completed_at: string | null;
           duration_seconds: number;
           status: "started" | "paused" | "completed" | "abandoned";
+          timer_started_at: string | null;
           created_at: string;
         };
         Insert: {
@@ -185,12 +186,41 @@ export type Database = {
           completed_at?: string | null;
           duration_seconds?: number;
           status?: "started" | "paused" | "completed" | "abandoned";
+          timer_started_at?: string | null;
           created_at?: string;
         };
         Update: {
           completed_at?: string | null;
           duration_seconds?: number;
           status?: "started" | "paused" | "completed" | "abandoned";
+          timer_started_at?: string | null;
+        };
+        Relationships: [];
+      };
+      workout_comments: {
+        Row: {
+          id: string;
+          user_id: string;
+          workout_session_id: string | null;
+          comment_date: string;
+          body: string;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          user_id: string;
+          workout_session_id?: string | null;
+          comment_date: string;
+          body: string;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          workout_session_id?: string | null;
+          comment_date?: string;
+          body?: string;
+          updated_at?: string;
         };
         Relationships: [];
       };

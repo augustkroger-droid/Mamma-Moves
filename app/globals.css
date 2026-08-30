@@ -1165,6 +1165,13 @@ a {
   font-weight: 900;
 }
 
+.completion-note {
+  display: grid;
+  gap: 10px;
+  margin-top: 4px;
+  text-align: left;
+}
+
 .calendar-panel {
   padding: 16px;
 }
@@ -1215,6 +1222,7 @@ a {
 }
 
 .calendar-grid button {
+  position: relative;
   min-height: 58px;
   border: 1px solid var(--color-border);
   border-radius: var(--radius-sm);
@@ -1238,6 +1246,17 @@ a {
   background: #e4f2eb;
 }
 
+.calendar-grid button.has-note::after {
+  position: absolute;
+  right: 7px;
+  top: 7px;
+  width: 6px;
+  height: 6px;
+  border-radius: 999px;
+  background: var(--color-primary);
+  content: "";
+}
+
 .calendar-grid strong,
 .calendar-grid small {
   display: block;
@@ -1250,6 +1269,8 @@ a {
 }
 
 .day-details {
+  display: grid;
+  gap: 16px;
   padding: 18px;
 }
 
@@ -1292,6 +1313,27 @@ a {
   padding-left: 1.2rem;
   color: var(--color-muted);
   line-height: 1.35;
+}
+
+.workout-note {
+  margin: 0;
+  border-left: 3px solid var(--color-primary);
+  border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+  padding: 10px 12px;
+  color: var(--color-text);
+  background: var(--color-primary-soft);
+  line-height: 1.45;
+}
+
+.day-notes,
+.day-comment-form {
+  display: grid;
+  gap: 10px;
+}
+
+.day-notes h3 {
+  margin: 0;
+  font-size: 0.95rem;
 }
 
 .stats-grid {
@@ -1400,16 +1442,31 @@ a {
 }
 
 .recent-session-row {
-  display: flex;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
   align-items: center;
-  justify-content: space-between;
   gap: 12px;
   border-radius: var(--radius-sm);
   padding: 12px;
   background: var(--color-surface-soft);
 }
 
-.recent-session-row span {
+.recent-session-row > span {
+  display: grid;
+  gap: 4px;
+}
+
+.recent-session-row em {
+  overflow: hidden;
+  color: var(--color-muted);
+  font-size: 0.86rem;
+  font-style: normal;
+  line-height: 1.35;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.recent-session-row b {
   color: var(--color-primary);
   font-weight: 900;
 }

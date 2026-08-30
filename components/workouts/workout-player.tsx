@@ -4,7 +4,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
-import { ArrowLeft, ArrowRight, Cast, CheckCircle2, Loader2, Maximize2, Minimize2, Pause, Play, Square } from "lucide-react";
+import { ArrowLeft, ArrowRight, Cast, CheckCircle2, Loader2, Maximize2, Minimize2, Pause, Play, Save, Square } from "lucide-react";
 import { createBrowserSupabaseClient } from "@/lib/supabase/client";
 import { localDateKey } from "@/lib/dates/local-date";
 import { exerciseEmbedUrl, youtubeWorkoutPlaylistUrl } from "@/lib/exercises/video";
@@ -40,6 +40,7 @@ type WorkoutSession = {
   started_at: string;
   duration_seconds: number;
   status: "started" | "paused" | "completed" | "abandoned";
+  timer_started_at: string | null;
 };
 
 type SessionExercise = {
@@ -115,8 +116,14 @@ export function WorkoutPlayer() {
   const [isVideoFullscreen, setIsVideoFullscreen] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
   const [summary, setSummary] = useState<SavedSummary | null>(null);
+  const [commentText, setCommentText] = useState("");
+  const [isSavingComment, setIsSavingComment] = useState(false);
+  const [commentMessage, setCommentMessage] = useState<string | null>(null);
   const sessionIdRef = useRef<string | null>(null);
+  const sessionStartedAtRef = useRef<string | null>(null);
   const elapsedSecondsRef = useRef(0);
+  const lastTimerTickRef = useRef(Date.now());
+  const isTimerRunningRef = useRef(false);
   const isFinishedRef = useRef(false);
 
   useEffect(() => {
@@ -149,20 +156,36 @@ export function WorkoutPlayer() {
     setIsVideoFullscreen((current) => !current);
   }
 
-  const persistDuration = useCallback(async (status?: "started" | "paused" | "completed") => {
-    const sessionId = sessionIdRef.current;
-    if (!sessionId || isFinishedRef.current) {
+  const syncElapsedFromClock = useCallback(() => {
+    const now = Date.now();
+    const elapsedSinceLastTick = Math.floor((now - lastTimerTickRef.current) / 1000);
+
+    if (elapsedSinceLastTick <= 0) {
       return;
     }
+
+    elapsedSecondsRef.current += elapsedSinceLastTick;
+    lastTimerTickRef.current = now;
+    setElapsedSeconds(elapsedSecondsRef.current);
+  }, []);
+
+  const persistDuration = useCallback(async (status?: "started" | "paused" | "completed") => {
+    const sessionId = sessionIdRef.current;
+    if (!sessionId || !isTimerRunningRef.current || isFinishedRef.current) {
+      return;
+    }
+
+    syncElapsedFromClock();
 
     await supabase
       .from("workout_sessions")
       .update({
         duration_seconds: elapsedSecondsRef.current,
+        timer_started_at: status === "paused" || status === "completed" ? null : new Date().toISOString(),
         ...(status ? { status } : {})
       })
       .eq("id", sessionId);
-  }, [supabase]);
+  }, [supabase, syncElapsedFromClock]);
 
   const createSession = useCallback(async (activeWorkout: ActiveWorkout) => {
     const { data: userData, error: userError } = await supabase.auth.getUser();
@@ -177,9 +200,10 @@ export function WorkoutPlayer() {
         user_id: userData.user.id,
         workout_template_id: activeWorkout.workoutTemplateId,
         duration_seconds: 0,
-        status: "started"
+        status: "started",
+        timer_started_at: new Date().toISOString()
       })
-      .select("id")
+      .select("id, started_at, timer_started_at")
       .single();
 
     if (sessionError || !session) {
@@ -208,6 +232,9 @@ export function WorkoutPlayer() {
 
     saveActiveWorkout(nextWorkout);
     sessionIdRef.current = session.id;
+    sessionStartedAtRef.current = session.started_at;
+    lastTimerTickRef.current = new Date(session.timer_started_at ?? session.started_at).getTime();
+    isTimerRunningRef.current = true;
     setSessionExercises(rows);
     return nextWorkout;
   }, [supabase]);
@@ -215,7 +242,7 @@ export function WorkoutPlayer() {
   const loadSession = useCallback(async (sessionId: string) => {
     const { data: session, error: sessionError } = await supabase
       .from("workout_sessions")
-      .select("id, workout_template_id, started_at, duration_seconds, status")
+      .select("id, workout_template_id, started_at, duration_seconds, status, timer_started_at")
       .eq("id", sessionId)
       .single();
 
@@ -267,10 +294,21 @@ export function WorkoutPlayer() {
       .map((link) => exercisesById.get(link.exercise_id))
       .filter((exercise): exercise is WorkoutExercise => Boolean(exercise));
     const nextIndex = Math.max(0, links.findIndex((link) => !link.completed));
+    const now = new Date();
+    const timerStartedAt = sessionData.status === "started" && sessionData.timer_started_at
+      ? new Date(sessionData.timer_started_at)
+      : now;
+    const elapsedSinceTimerStarted = sessionData.status === "started"
+      ? Math.max(0, Math.floor((now.getTime() - timerStartedAt.getTime()) / 1000))
+      : 0;
+    const recalculatedDuration = sessionData.duration_seconds + elapsedSinceTimerStarted;
 
     sessionIdRef.current = sessionId;
-    elapsedSecondsRef.current = sessionData.duration_seconds;
-    setElapsedSeconds(sessionData.duration_seconds);
+    sessionStartedAtRef.current = sessionData.started_at;
+    elapsedSecondsRef.current = recalculatedDuration;
+    lastTimerTickRef.current = now.getTime();
+    isTimerRunningRef.current = true;
+    setElapsedSeconds(recalculatedDuration);
     setSessionExercises(links);
 
     return {
@@ -291,7 +329,14 @@ export function WorkoutPlayer() {
           const resumedWorkout = await loadSession(sessionId);
           setWorkout(resumedWorkout);
           setCurrentIndex(resumedWorkout.nextIndex);
-          await supabase.from("workout_sessions").update({ status: "started" }).eq("id", sessionId);
+          await supabase
+            .from("workout_sessions")
+            .update({
+              status: "started",
+              duration_seconds: elapsedSecondsRef.current,
+              timer_started_at: new Date().toISOString()
+            })
+            .eq("id", sessionId);
           setIsLoading(false);
           return;
         }
@@ -307,6 +352,14 @@ export function WorkoutPlayer() {
           const resumedWorkout = await loadSession(activeWorkout.sessionId);
           setWorkout(resumedWorkout);
           setCurrentIndex(resumedWorkout.nextIndex);
+          await supabase
+            .from("workout_sessions")
+            .update({
+              status: "started",
+              duration_seconds: elapsedSecondsRef.current,
+              timer_started_at: new Date().toISOString()
+            })
+            .eq("id", activeWorkout.sessionId);
           setIsLoading(false);
           return;
         }
@@ -330,12 +383,7 @@ export function WorkoutPlayer() {
     }
 
     const timer = window.setInterval(() => {
-      if (document.visibilityState !== "visible") {
-        return;
-      }
-
-      elapsedSecondsRef.current += 1;
-      setElapsedSeconds(elapsedSecondsRef.current);
+      syncElapsedFromClock();
 
       if (elapsedSecondsRef.current % 10 === 0) {
         void persistDuration();
@@ -343,27 +391,23 @@ export function WorkoutPlayer() {
     }, 1000);
 
     function handleVisibilityChange() {
-      if (document.visibilityState === "hidden") {
-        void persistDuration("paused");
-      } else {
-        void persistDuration("started");
-      }
+      void persistDuration("started");
     }
 
     function handlePageHide() {
-      void persistDuration("paused");
+      void persistDuration("started");
     }
 
     window.addEventListener("pagehide", handlePageHide);
     document.addEventListener("visibilitychange", handleVisibilityChange);
 
     return () => {
-      void persistDuration("paused");
+      void persistDuration("started");
       window.clearInterval(timer);
       window.removeEventListener("pagehide", handlePageHide);
       document.removeEventListener("visibilitychange", handleVisibilityChange);
     };
-  }, [isLoading, persistDuration, summary]);
+  }, [isLoading, persistDuration, summary, syncElapsedFromClock]);
 
   useEffect(() => {
     const sessionId = sessionIdRef.current;
@@ -481,6 +525,9 @@ export function WorkoutPlayer() {
     setSaveError(null);
 
     try {
+      syncElapsedFromClock();
+      isTimerRunningRef.current = false;
+
       if (status === "completed" && shouldCompleteCurrentExercise) {
         await markExerciseCompleted(currentIndex);
       }
@@ -492,7 +539,8 @@ export function WorkoutPlayer() {
         .update({
           completed_at: completedAt,
           duration_seconds: Math.max(1, elapsedSecondsRef.current),
-          status
+          status,
+          timer_started_at: null
         })
         .eq("id", sessionId);
 
@@ -515,10 +563,47 @@ export function WorkoutPlayer() {
       });
     } catch (error) {
       isFinishedRef.current = false;
+      isTimerRunningRef.current = true;
       setSaveError(error instanceof Error ? error.message : "Kunde inte spara passet.");
     } finally {
       setIsSaving(false);
     }
+  }
+
+  async function saveWorkoutComment() {
+    const sessionId = sessionIdRef.current;
+    const body = commentText.trim();
+
+    if (!sessionId || !body) {
+      return;
+    }
+
+    setIsSavingComment(true);
+    setCommentMessage(null);
+
+    const { data: userData, error: userError } = await supabase.auth.getUser();
+
+    if (userError || !userData.user) {
+      setCommentMessage("Kunde inte hitta inloggad användare.");
+      setIsSavingComment(false);
+      return;
+    }
+
+    const { error } = await supabase.from("workout_comments").insert({
+      user_id: userData.user.id,
+      workout_session_id: sessionId,
+      comment_date: localDateKey(new Date(sessionStartedAtRef.current ?? new Date())),
+      body
+    });
+
+    if (error) {
+      setCommentMessage(error.message);
+    } else {
+      setCommentMessage("Anteckningen är sparad.");
+      setCommentText("");
+    }
+
+    setIsSavingComment(false);
   }
 
   if (isLoading) {
@@ -560,6 +645,29 @@ export function WorkoutPlayer() {
           </p>
           {summary.status === "completed" && summary.completedCount > 0 ? (
             <p className="streak-callout">{summary.currentStreak} dagars streak</p>
+          ) : null}
+          {summary.status === "completed" ? (
+            <div className="completion-note">
+              <label className="form-field">
+                <span>Anteckning om passet</span>
+                <textarea
+                  value={commentText}
+                  onChange={(event) => setCommentText(event.target.value)}
+                  rows={3}
+                  placeholder="Hur kändes passet?"
+                />
+              </label>
+              {commentMessage ? <p className="form-message">{commentMessage}</p> : null}
+              <button
+                className="button secondary full"
+                type="button"
+                onClick={saveWorkoutComment}
+                disabled={isSavingComment || commentText.trim().length === 0}
+              >
+                {isSavingComment ? <Loader2 className="spin" aria-hidden="true" size={20} /> : <Save aria-hidden="true" size={20} />}
+                Spara anteckning
+              </button>
+            </div>
           ) : null}
           <Link className="button full" href="/calendar">
             Se kalendern

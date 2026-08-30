@@ -21,6 +21,13 @@ type CompletedExercise = {
   workout_session_id: string;
 };
 
+type WorkoutComment = {
+  id: string;
+  workout_session_id: string | null;
+  body: string;
+  created_at: string;
+};
+
 function startOfWeek(date: Date) {
   const copy = new Date(date);
   const weekday = (copy.getDay() + 6) % 7;
@@ -84,13 +91,14 @@ export function StatsOverview() {
   const [sessions, setSessions] = useState<TrainingSession[]>([]);
   const [pauses, setPauses] = useState<StreakPauseRange[]>([]);
   const [completedExercises, setCompletedExercises] = useState<CompletedExercise[]>([]);
+  const [comments, setComments] = useState<WorkoutComment[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isPausing, setIsPausing] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [pauseMessage, setPauseMessage] = useState<string | null>(null);
 
   const loadStats = useCallback(async () => {
-    const [sessionsResult, exercisesResult, pausesResult] = await Promise.all([
+    const [sessionsResult, exercisesResult, pausesResult, commentsResult] = await Promise.all([
       supabase
         .from("workout_sessions")
         .select("id, started_at, duration_seconds")
@@ -101,7 +109,12 @@ export function StatsOverview() {
         .eq("completed", true),
       supabase
         .from("streak_pauses")
-        .select("start_date, end_date")
+        .select("start_date, end_date"),
+      supabase
+        .from("workout_comments")
+        .select("id, workout_session_id, body, created_at")
+        .not("workout_session_id", "is", null)
+        .order("created_at", { ascending: false })
     ]);
 
     if (sessionsResult.error) {
@@ -110,10 +123,13 @@ export function StatsOverview() {
       setErrorMessage(exercisesResult.error.message);
     } else if (pausesResult.error) {
       setErrorMessage(pausesResult.error.message);
+    } else if (commentsResult.error) {
+      setErrorMessage(commentsResult.error.message);
     } else {
       setSessions((sessionsResult.data ?? []) as TrainingSession[]);
       setCompletedExercises((exercisesResult.data ?? []) as CompletedExercise[]);
       setPauses((pausesResult.data ?? []) as StreakPauseRange[]);
+      setComments((commentsResult.data ?? []) as WorkoutComment[]);
     }
 
     setIsLoading(false);
@@ -270,8 +286,16 @@ export function StatsOverview() {
           <div className="screen-stack">
             {recentSessions.map((session) => (
               <article key={session.id} className="recent-session-row">
-                <strong>{new Date(session.started_at).toLocaleDateString("sv-SE", { day: "numeric", month: "short" })}</strong>
-                <span>{formatMinutes(session.duration_seconds)}</span>
+                <span>
+                  <strong>{new Date(session.started_at).toLocaleDateString("sv-SE", { day: "numeric", month: "short" })}</strong>
+                  {comments
+                    .filter((comment) => comment.workout_session_id === session.id)
+                    .slice(0, 1)
+                    .map((comment) => (
+                      <em key={comment.id}>{comment.body}</em>
+                    ))}
+                </span>
+                <b>{formatMinutes(session.duration_seconds)}</b>
               </article>
             ))}
           </div>
