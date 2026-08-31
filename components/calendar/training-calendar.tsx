@@ -304,7 +304,6 @@ export function TrainingCalendar() {
                 <strong>{day.getDate()}</strong>
                 {hasTraining ? <small>Tränat</small> : null}
                 {!hasTraining && hasPause ? <small>Paus</small> : null}
-                {!hasTraining && !hasPause && hasComment ? <small>Anteckning</small> : null}
               </button>
             );
           })}
