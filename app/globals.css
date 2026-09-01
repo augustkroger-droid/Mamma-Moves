@@ -1288,6 +1288,27 @@ a {
   background: var(--color-surface-soft);
 }
 
+.session-summary {
+  display: grid;
+  gap: 2px;
+}
+
+.session-summary span {
+  color: var(--color-primary);
+  font-weight: 900;
+}
+
+.compact-icon-button {
+  width: 36px;
+  height: 36px;
+  flex: 0 0 auto;
+}
+
+.compact-icon-button:disabled {
+  cursor: wait;
+  opacity: 0.7;
+}
+
 .session-row.is-pause {
   background: #e4f2eb;
 }

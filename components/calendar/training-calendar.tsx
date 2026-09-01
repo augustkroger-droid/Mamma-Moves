@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { ChevronLeft, ChevronRight, Loader2, MessageSquarePlus } from "lucide-react";
+import { ChevronLeft, ChevronRight, Loader2, MessageSquarePlus, Trash2 } from "lucide-react";
 import { createBrowserSupabaseClient } from "@/lib/supabase/client";
 import { eachDateInRange, localDateKey } from "@/lib/dates/local-date";
 import { completeOldUnfinishedSessions } from "@/lib/workouts/session-maintenance";
@@ -87,6 +87,7 @@ export function TrainingCalendar() {
   const [selectedDay, setSelectedDay] = useState<string>(localDateKey());
   const [isLoading, setIsLoading] = useState(true);
   const [isSavingComment, setIsSavingComment] = useState(false);
+  const [deletingSessionIds, setDeletingSessionIds] = useState<Set<string>>(new Set());
   const [newComment, setNewComment] = useState("");
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [commentMessage, setCommentMessage] = useState<string | null>(null);
@@ -219,6 +220,37 @@ export function TrainingCalendar() {
     setIsSavingComment(false);
   }
 
+  async function deleteSession(session: TrainingSession) {
+    if (deletingSessionIds.has(session.id)) {
+      return;
+    }
+
+    const confirmed = window.confirm("Är du säker på att du vill ta bort det här passet? Passet och dess kommentarer raderas permanent.");
+
+    if (!confirmed) {
+      return;
+    }
+
+    setErrorMessage(null);
+    setDeletingSessionIds((current) => new Set(current).add(session.id));
+
+    const { error } = await supabase.from("workout_sessions").delete().eq("id", session.id);
+
+    if (error) {
+      setErrorMessage(error.message);
+    } else {
+      setSessions((current) => current.filter((item) => item.id !== session.id));
+      setSessionExercises((current) => current.filter((item) => item.workout_session_id !== session.id));
+      setComments((current) => current.filter((item) => item.workout_session_id !== session.id));
+    }
+
+    setDeletingSessionIds((current) => {
+      const next = new Set(current);
+      next.delete(session.id);
+      return next;
+    });
+  }
+
   const year = viewedMonth.getFullYear();
   const month = viewedMonth.getMonth();
   const daysInMonth = new Date(year, month + 1, 0).getDate();
@@ -325,8 +357,20 @@ export function TrainingCalendar() {
             {selectedSessions.map((session) => (
               <article key={session.id} className="session-detail">
                 <div className="session-row">
-                  <strong>{sessionTitle(session.status)}</strong>
-                  <span>{formatMinutes(session.duration_seconds)}</span>
+                  <div className="session-summary">
+                    <strong>{sessionTitle(session.status)}</strong>
+                    <span>{formatMinutes(session.duration_seconds)}</span>
+                  </div>
+                  <button
+                    className="icon-button danger-icon-button compact-icon-button"
+                    type="button"
+                    onClick={() => void deleteSession(session)}
+                    disabled={deletingSessionIds.has(session.id)}
+                    title="Ta bort pass"
+                    aria-label={`Ta bort ${sessionTitle(session.status).toLowerCase()}`}
+                  >
+                    {deletingSessionIds.has(session.id) ? <Loader2 className="spin" aria-hidden="true" size={18} /> : <Trash2 aria-hidden="true" size={18} />}
+                  </button>
                 </div>
                 {selectedComments
                   .filter((comment) => comment.workout_session_id === session.id)
